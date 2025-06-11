@@ -2,9 +2,10 @@
  * Store types for Gravity Client
  */
 
-import { ApolloClient } from '@apollo/client';
-import { GravityMessage, SendMessageParams } from '../types/shared';
-import { ConnectionConfig } from '../types/config';
+import React from "react";
+import { ApolloClient } from "@apollo/client";
+import { GravityMessage, SendMessageParams } from "../types/shared";
+import { ConnectionConfig } from "../types/config";
 
 // Connection state
 export interface ConnectionState {
@@ -22,19 +23,15 @@ export interface ActiveResponseState {
   conversationId: string | null;
   chatId: string | null;
   userId: string | null;
-  state: 'idle' | 'thinking' | 'responding' | 'complete';
-  messageSource: 'user' | 'agent' | null;
-  
+  state: "idle" | "thinking" | "responding" | "complete";
+  messageSource: "user" | "agent" | null;
+
   // Flexible message storage - any JSON from server (3-tier architecture)
   messageChunks: any[]; // Streaming text chunks
   progressUpdate: any | null; // Latest progress update
   jsonData: any[]; // Raw JSON data from server
   actionSuggestion: any | null; // Latest action suggestions
-  
-  // Legacy fields (can be removed later)
-  text: any | null;
-  currentMessageChunk: any | null;
-  fullMessage: string;
+  text: any | null; // Latest text message
 
   // Timing
   startTime: number | null;
@@ -51,8 +48,5 @@ export interface ConversationState {
 // UI state
 export interface UIState {
   sidebarOpen: boolean;
-  activeObjectId: string | null;
-  isConnected: boolean;
-  connectionError: string | null;
-  voiceEnabled: boolean;
+  componentConfig: Record<string, React.ComponentType<any>>;
 }

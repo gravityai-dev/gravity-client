@@ -8,7 +8,21 @@ export const useActiveResponse = () => {
   const store = useGravityStore();
   
   const {
-    activeResponse,
+    // Response state properties (flattened)
+    conversationId,
+    chatId,
+    userId,
+    state,
+    messageSource,
+    messageChunks,
+    progressUpdate,
+    jsonData,
+    actionSuggestion,
+    text,
+    startTime,
+    endTime,
+    
+    // Response actions
     startActiveResponse,
     processMessage,
     completeActiveResponse,
@@ -16,46 +30,56 @@ export const useActiveResponse = () => {
   } = store;
 
   // Helper functions for state checks
-  const isIdle = activeResponse.state === 'idle';
-  const isThinking = activeResponse.state === 'thinking';
-  const isResponding = activeResponse.state === 'responding';
-  const isComplete = activeResponse.state === 'complete';
+  const isIdle = state === 'idle';
+  const isThinking = state === 'thinking';
+  const isResponding = state === 'responding';
+  const isComplete = state === 'complete';
   const isActive = isThinking || isResponding;
 
   // Helper to get latest progress
-  const getProgress = () => activeResponse.progressUpdate;
+  const getProgress = () => progressUpdate;
   
   // Helper to get latest actions
-  const getActions = () => activeResponse.actionSuggestion;
+  const getActions = () => actionSuggestion;
   
-  // Helper to get streaming text
-  const getStreamingText = () => activeResponse.fullMessage;
+  // Helper to get streaming text (build from chunks)
+  const getStreamingText = () => {
+    return messageChunks
+      .filter(chunk => chunk.text)
+      .map(chunk => chunk.text)
+      .join('');
+  };
   
   // Helper to get current chunk
-  const getCurrentChunk = () => activeResponse.currentMessageChunk;
+  const getCurrentChunk = () => {
+    const lastChunk = messageChunks[messageChunks.length - 1];
+    return lastChunk?.text || '';
+  };
 
   return {
     // State
-    activeResponse,
-    state: activeResponse.state,
-    messageSource: activeResponse.messageSource,
+    conversationId,
+    chatId,
+    userId,
+    state,
+    messageSource,
     
     // Streaming data
-    messageChunks: activeResponse.messageChunks,
-    fullMessage: activeResponse.fullMessage,
-    currentChunk: activeResponse.currentMessageChunk,
+    messageChunks,
+    fullMessage: getStreamingText(),
+    currentChunk: getCurrentChunk(),
     
     // Structured data (Tier 2)
-    progressUpdate: activeResponse.progressUpdate,
-    actionSuggestion: activeResponse.actionSuggestion,
-    text: activeResponse.text,
+    progressUpdate,
+    actionSuggestion,
+    text,
     
     // Raw data (Tier 1)
-    jsonData: activeResponse.jsonData,
+    jsonData,
     
     // Timing
-    startTime: activeResponse.startTime,
-    endTime: activeResponse.endTime,
+    startTime,
+    endTime,
     
     // State helpers
     isIdle,

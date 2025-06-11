@@ -9,9 +9,8 @@ import { getMainDefinition } from '@apollo/client/utilities';
 import { ConnectionState } from '../types';
 import { ConnectionConfig } from '../../types/config';
 
-// Connection slice interface
-export interface ConnectionSlice {
-  connection: ConnectionState;
+// Connection slice interface - flattened for easy access
+export interface ConnectionSlice extends ConnectionState {
   connect: (config: ConnectionConfig) => Promise<void>;
   disconnect: () => void;
   setupSubscription: (conversationId: string) => void;
@@ -35,16 +34,14 @@ export const createConnectionSlice = (
   get: any,
   api: any
 ): ConnectionSlice => ({
-  connection: initialConnectionState,
+  ...initialConnectionState,
 
   connect: async (config: ConnectionConfig) => {
     set((state: any) => ({
-      connection: {
-        ...state.connection,
-        isConnecting: true,
-        error: null,
-        config,
-      },
+      ...state,
+      isConnecting: true,
+      error: null,
+      config,
     }));
 
     try {
@@ -105,24 +102,20 @@ export const createConnectionSlice = (
       });
 
       set((state: any) => ({
-        connection: {
-          ...state.connection,
-          client,
-          isConnected: true,
-          isConnecting: false,
-          lastConnected: new Date(),
-        },
+        ...state,
+        client,
+        isConnected: true,
+        isConnecting: false,
+        lastConnected: new Date(),
       }));
 
       console.log('✓ Connected to Gravity AI with SSE support');
     } catch (error) {
       console.error('Failed to connect to Gravity AI:', error);
       set((state: any) => ({
-        connection: {
-          ...state.connection,
-          isConnecting: false,
-          error: error instanceof Error ? error.message : 'Connection failed',
-        },
+        ...state,
+        isConnecting: false,
+        error: error instanceof Error ? error.message : 'Connection failed',
       }));
       throw error;
     }
@@ -130,7 +123,7 @@ export const createConnectionSlice = (
 
   disconnect: () => {
     const state = get();
-    const { client, subscriptions } = state.connection;
+    const { client, subscriptions } = state;
 
     // Cleanup subscriptions
     subscriptions.forEach((sub: any) => {
@@ -145,10 +138,8 @@ export const createConnectionSlice = (
     }
 
     set((state: any) => ({
-      connection: {
-        ...initialConnectionState,
-        config: state.connection.config, // Keep config for reconnection
-      },
+      ...initialConnectionState,
+      config: state.config, // Keep config for reconnection
     }));
 
     console.log('✓ Disconnected from Gravity AI');
@@ -161,6 +152,6 @@ export const createConnectionSlice = (
 
   cleanupSubscription: () => {
     const state = get();
-    state.connection.subscriptions.clear();
+    state.subscriptions.clear();
   },
 });

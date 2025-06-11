@@ -24,8 +24,13 @@ export function useGravity() {
     sendMessage,
     clearConversation,
     
-    // Response slice
-    activeResponse,
+    // Response slice (flattened)
+    state: chatState,
+    messageSource,
+    messageChunks,
+    progressUpdate,
+    actionSuggestion,
+    text,
     startActiveResponse,
     processMessage,
     completeActiveResponse,
@@ -33,8 +38,8 @@ export function useGravity() {
     
     // UI slice
     sidebarOpen,
-    toggleSidebar,
     componentConfig,
+    toggleSidebar,
     setComponentConfig,
   } = store;
 
@@ -57,8 +62,12 @@ export function useGravity() {
     messages,
     
     // Active response state
-    activeResponse,
-    chatState: activeResponse.state,
+    chatState,
+    messageSource,
+    messageChunks,
+    progressUpdate,
+    actionSuggestion,
+    text,
     
     // UI state
     sidebarOpen,

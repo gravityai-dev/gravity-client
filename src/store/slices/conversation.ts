@@ -6,9 +6,8 @@
 import { ConversationState } from '../types';
 import { GravityMessage, SendMessageParams } from '../../types/shared';
 
-// Conversation slice interface
-export interface ConversationSlice {
-  conversation: ConversationState;
+// Conversation slice interface - flattened for easy access
+export interface ConversationSlice extends ConversationState {
   setConversationId: (id: string) => void;
   addMessage: (message: GravityMessage) => void;
   clearConversation: () => void;
@@ -41,29 +40,27 @@ export const createConversationSlice = (
   get: any,
   api: any
 ): ConversationSlice => ({
-  conversation: initialConversationState,
+  conversationId: initialConversationState.conversationId,
+  messages: initialConversationState.messages,
+  isLoading: initialConversationState.isLoading,
 
   setConversationId: (id: string) => {
     set((state: any) => ({
-      conversation: {
-        ...state.conversation,
-        conversationId: id,
-      },
+      conversationId: id,
     }));
   },
 
   addMessage: (message: GravityMessage) => {
     set((state: any) => ({
-      conversation: {
-        ...state.conversation,
-        messages: [...state.conversation.messages, message],
-      },
+      messages: [...state.messages, message],
     }));
   },
 
   clearConversation: () => {
     set((state: any) => ({
-      conversation: initialConversationState,
+      conversationId: initialConversationState.conversationId,
+      messages: initialConversationState.messages,
+      isLoading: initialConversationState.isLoading,
     }));
   },
 
@@ -76,19 +73,16 @@ export const createConversationSlice = (
 
     // Set loading state
     set((state: any) => ({
-      conversation: {
-        ...state.conversation,
-        isLoading: true,
-      },
+      isLoading: true,
     }));
 
     try {
       const conversationId = params.conversationId || 
-        state.conversation.conversationId || 
+        state.conversationId || 
         generateConversationId();
       
       // Update conversation ID if needed
-      if (conversationId !== state.conversation.conversationId) {
+      if (conversationId !== state.conversationId) {
         get().setConversationId(conversationId);
       }
 
@@ -111,10 +105,7 @@ export const createConversationSlice = (
     } finally {
       // Clear loading state
       set((state: any) => ({
-        conversation: {
-          ...state.conversation,
-          isLoading: false,
-        },
+        isLoading: false,
       }));
     }
   },
