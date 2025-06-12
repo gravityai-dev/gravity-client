@@ -12,7 +12,6 @@ export const useActiveResponse = () => {
     conversationId,
     chatId,
     userId,
-    state,
     messageSource,
     messageChunks,
     progressUpdate,
@@ -27,13 +26,16 @@ export const useActiveResponse = () => {
     processMessage,
     completeActiveResponse,
     clearActiveResponse,
+    
+    // UI state for universal app state
+    appState,
   } = store;
 
-  // Helper functions for state checks
-  const isIdle = state === 'idle';
-  const isThinking = state === 'thinking';
-  const isResponding = state === 'responding';
-  const isComplete = state === 'complete';
+  // Helper functions for state checks using universal appState
+  const isIdle = appState === 'idle';
+  const isThinking = appState === 'thinking';
+  const isResponding = appState === 'responding';
+  const isComplete = appState === 'complete';
   const isActive = isThinking || isResponding;
 
   // Helper to get latest progress
@@ -61,7 +63,6 @@ export const useActiveResponse = () => {
     conversationId,
     chatId,
     userId,
-    state,
     messageSource,
     
     // Streaming data

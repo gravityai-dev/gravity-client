@@ -16,6 +16,7 @@ export interface ConnectionState {
   config: ConnectionConfig | null;
   subscriptions: Map<string, any>;
   lastConnected: Date | null;
+  conversationId: string | null;
 }
 
 // Active response state
@@ -23,7 +24,6 @@ export interface ActiveResponseState {
   conversationId: string | null;
   chatId: string | null;
   userId: string | null;
-  state: "idle" | "thinking" | "responding" | "complete";
   messageSource: "user" | "agent" | null;
 
   // Flexible message storage - any JSON from server (3-tier architecture)
@@ -49,4 +49,13 @@ export interface ConversationState {
 export interface UIState {
   sidebarOpen: boolean;
   componentConfig: Record<string, React.ComponentType<any>>;
+  activeObjectId?: string;
+
+  // App-level workflow state
+  workflowId: string | null;
+  workflowRunId: string | null;
+
+  // Universal app-level execution state
+  appState: "idle" | "thinking" | "responding" | "waiting" | "complete" | "error";
+  isProcessing: boolean;
 }

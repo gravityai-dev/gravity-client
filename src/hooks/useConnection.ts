@@ -15,7 +15,6 @@ export const useConnection = () => {
     config,
     connect,
     disconnect,
-    setupSubscription,
     cleanupSubscription,
   } = store;
 
@@ -30,7 +29,6 @@ export const useConnection = () => {
     // Actions
     connect,
     disconnect,
-    setupSubscription,
     cleanupSubscription,
   };
 };

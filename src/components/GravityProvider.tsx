@@ -8,30 +8,16 @@ import { ApolloProvider } from '@apollo/client';
 import { useGravityStore } from '../store';
 import { GravityConfig } from '../types/config';
 
-export interface GravityTheme {
-  components: Record<string, React.ComponentType<any>>;
-  fallback?: React.ComponentType<any>;
-}
-
 interface GravityProviderProps {
   config: GravityConfig;
-  theme?: GravityTheme;
   children: React.ReactNode;
 }
 
 export const GravityProvider: React.FC<GravityProviderProps> = ({ 
   config, 
-  theme,
   children 
 }) => {
-  const { connect, disconnect, client, setComponentConfig } = useGravityStore();
-  
-  // Set component configuration from theme
-  useEffect(() => {
-    if (theme?.components) {
-      setComponentConfig(theme.components);
-    }
-  }, [theme, setComponentConfig]);
+  const { connect, disconnect, client } = useGravityStore();
   
   // Connect on mount with config
   useEffect(() => {

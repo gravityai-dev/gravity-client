@@ -1,208 +1,292 @@
 # Gravity Client
 
-Clean, organized client library for Gravity AI with real-time streaming and 3-tier JSON architecture.
+Clean, organized client library for Gravity AI with real-time streaming and intelligent component architecture.
 
 ## Features
 
-- 🚀 **Real-time streaming** with GraphQL SSE subscriptions
-- 🏗️ **3-tier JSON architecture** for flexible data handling
-- 🎯 **Self-contained Zustand slices** with no cross-dependencies
-- 📦 **TypeScript throughout** with comprehensive type safety
-- ⚛️ **React integration** with hooks and components
-- 🔄 **Apollo Client** with split link architecture
+- **Smart Components** - Drop-in components that automatically connect to Gravity state
+- **Granular State Control** - Precise control over what state each component receives
+- **Real-time Streaming** - Built-in support for AI message streaming with SSE
+- **3-Tier JSON Architecture** - Flexible message handling (Raw JSON, Semantic Messages, Direct UI)
+- **Zero Configuration** - Components work anywhere without setup
+- **Render Prop Pattern** - Flexible UI rendering with GravityContainer
+- **TypeScript First** - Full type safety throughout
+- **Zustand State** - Flattened, intuitive state management
 
-## Installation
+## Quick Start
+
+### Installation
 
 ```bash
 npm install @gravityai-dev/gravity-client
 ```
 
-## Quick Start
+### Basic Setup
 
-```tsx
-import React from 'react';
-import { GravityProvider, GravityContainer } from '@gravityai-dev/gravity-client';
-
-const config = {
-  apiUrl: 'http://localhost:4000/graphql',
-  apiKey: 'your-api-key',
-};
+```jsx
+import { GravityProvider } from 'gravity-client';
 
 function App() {
   return (
-    <GravityProvider config={config}>
-      <GravityContainer>
-        {(gravity) => (
-          <div>
-            <h1>Chat State: {gravity.chatState}</h1>
-            <div>Messages: {gravity.messages.length}</div>
-            <button 
-              onClick={() => gravity.sendMessage({ text: "Hello!" })}
-              disabled={!gravity.isConnected}
-            >
-              Send Message
-            </button>
-          </div>
-        )}
-      </GravityContainer>
+    <GravityProvider
+      config={{
+        endpoint: 'http://localhost:4100/graphql',
+        apiKey: 'your-api-key'
+      }}
+    >
+      <YourApp />
     </GravityProvider>
   );
 }
+```
+
+## Smart Components
+
+The revolutionary feature of Gravity Client is **Smart Components** - components that automatically connect to Gravity state and can be dropped anywhere in your app.
+
+### Creating Smart Components
+
+Use the `withGravity` HOC to create intelligent components:
+
+```jsx
+import { withGravity } from 'gravity-client';
+import { ProgressUpdateUI } from './ui/ProgressUpdateUI';
+
+// Smart component with granular state control
+const ProgressUpdate = withGravity(ProgressUpdateUI, {
+  select: (gravity) => ({
+    isLoading: gravity.isLoading,
+    connectionStatus: gravity.connectionStatus,
+    progress: gravity.activeResponse?.progress
+  })
+});
+
+// Now use anywhere in your app:
+<ProgressUpdate message="Processing..." progress={75} />
+```
+
+### Smart Component Examples
+
+```jsx
+// Message streaming component
+const MessageChunk = withGravity(MessageChunkUI, {
+  select: (gravity) => ({
+    isStreaming: gravity.activeResponse?.isStreaming,
+    currentText: gravity.activeResponse?.streamingText
+  })
+});
+
+// Action suggestions with conversation context
+const ActionSuggestion = withGravity(ActionSuggestionUI, {
+  select: (gravity) => ({
+    sendMessage: gravity.sendMessage,
+    conversationId: gravity.conversationId,
+    isLoading: gravity.isLoading
+  })
+});
+
+// Pure UI component (no state needed)
+const SimpleButton = withGravity(ButtonUI);
+```
+
+### Drop Anywhere Magic 
+
+Smart components work anywhere without configuration:
+
+```jsx
+// In chat interface
+<div className="chat">
+  <MessageChunk text="Here's what I found..." />
+  <ProgressUpdate message="Thinking..." progress={25} />
+  <ActionSuggestion title="Try this" actions={[...]} />
+</div>
+
+// In sidebar
+<div className="sidebar">
+  <ProgressUpdate message="Syncing..." progress={80} />
+  <ActionSuggestion title="Quick action" />
+</div>
+
+// In modals, anywhere!
+<Modal>
+  <ProgressUpdate message="Processing request..." />
+</Modal>
+```
+
+## State Management
+
+### Hooks
+
+```jsx
+import { useGravity, useActiveResponse, useConnection } from 'gravity-client';
+
+function MyComponent() {
+  const {
+    // Connection state
+    connectionStatus,
+    isConnected,
+    
+    // Conversation state
+    conversationId,
+    messages,
+    isLoading,
+    
+    // UI state
+    sidebarOpen,
+    activeObjectId,
+    
+    // Actions
+    sendMessage,
+    toggleSidebar,
+    setActiveObject
+  } = useGravity();
+
+  const {
+    // Active response state
+    isStreaming,
+    streamingText,
+    currentChunk,
+    progress,
+    state,
+    
+    // Response messages
+    messages: responseMessages
+  } = useActiveResponse();
+}
+```
+
+### Direct Store Access
+
+```jsx
+import { useGravityStore } from 'gravity-client';
+
+const store = useGravityStore();
+store.sendMessage('Hello AI!');
+store.toggleSidebar(true);
+```
+
+## Real-time Streaming
+
+Gravity Client handles real-time AI streaming automatically:
+
+```jsx
+function StreamingChat() {
+  const { sendMessage } = useGravity();
+  const { isStreaming, streamingText } = useActiveResponse();
+
+  return (
+    <div>
+      <div className="messages">
+        {isStreaming && <div>{streamingText}</div>}
+      </div>
+      <button onClick={() => sendMessage('Hello!')}>
+        Send Message
+      </button>
+    </div>
+  );
+}
+```
+
+## GraphQL Integration
+
+Built-in GraphQL operations and subscriptions:
+
+```jsx
+import { 
+  TALK_TO_AGENT, 
+  AI_RESULT_SUBSCRIPTION,
+  GET_CHAT_STATUS 
+} from 'gravity-client';
+
+// Operations are automatically handled by the library
+// Just use the hooks and smart components!
 ```
 
 ## Architecture
 
 ### 3-Tier JSON Messaging
 
-The library implements a sophisticated 3-tier architecture for handling different types of data:
+1. **Tier 1: Raw JSON** - Direct server data (`jsonData[]`)
+2. **Tier 2: Semantic Messages** - Structured types (`MessageChunk`, `ProgressUpdate`, `ActionSuggestion`)
+3. **Tier 3: Direct UI Render** - Component specs that bypass store for immediate rendering
 
-- **Tier 1: Raw JSON Data** - Raw server data stored in `jsonData[]`
-- **Tier 2: Structured Semantic Messages** - Parsed messages like `MessageChunk`, `ProgressUpdate`, `ActionSuggestion`
-- **Tier 3: Direct UI Render JSON** - Bypasses state entirely for immediate UI rendering
+### State Structure
 
-### Store Slices
-
-#### Connection Slice
-- Apollo Client with split link (HTTP + SSE)
-- Connection state management
-- Subscription lifecycle
-
-#### Conversation Slice  
-- Message history
-- Send message functionality
-- Conversation management
-
-#### Response Slice
-- Real-time streaming response handling
-- 3-tier message processing
-- Progress tracking
-
-#### UI Slice
-- Component configuration
-- UI state management
-
-## API Reference
-
-### Hooks
-
-#### `useGravity()`
-Main hook providing access to all Gravity functionality.
-
-```tsx
-const {
-  // Connection state
-  isConnected,
-  isConnecting,
-  connectionError,
+```typescript
+interface GravityStore {
+  // Connection
+  connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error';
+  isConnected: boolean;
   
-  // Conversation state
-  messages,
-  conversationId,
+  // Conversation
+  conversationId: string | null;
+  messages: GravityMessage[];
+  isLoading: boolean;
   
-  // Active response state
-  activeResponse,
-  chatState,
+  // Active Response
+  isStreaming: boolean;
+  streamingText: string;
+  currentChunk: MessageChunk | null;
+  progress?: number;
+  state?: any;
+  
+  // UI
+  sidebarOpen: boolean;
+  activeObjectId?: string;
+  componentConfig: Record<string, React.ComponentType<any>>;
   
   // Actions
-  sendMessage,
-  connect,
-  disconnect,
-} = useGravity();
+  sendMessage: (message: string) => Promise<void>;
+  toggleSidebar: (forceState?: boolean) => void;
+  setActiveObject: (objectId?: string) => void;
+}
 ```
 
-#### `useActiveResponse()`
-Specialized hook for streaming response management.
+## Advanced Usage
 
-```tsx
-const {
-  // Streaming data
-  fullMessage,
-  currentChunk,
-  messageChunks,
-  
-  // Structured data
-  progressUpdate,
-  actionSuggestion,
-  
-  // State helpers
-  isThinking,
-  isResponding,
-  isComplete,
-  
-  // Actions
-  startActiveResponse,
-  processMessage,
-  completeActiveResponse,
-} = useActiveResponse();
-```
+### Custom Component Maps
 
-#### `useConnection()`
-Connection-specific hook.
+```jsx
+import { componentMap } from './theme/componentMap';
 
-```tsx
-const {
-  client,
-  isConnected,
-  error,
-  connect,
-  disconnect,
-} = useConnection();
-```
+const customComponents = {
+  ProgressUpdate: MyCustomProgressUpdate,
+  MessageChunk: MyCustomMessageChunk,
+  ActionSuggestion: MyCustomActionSuggestion,
+  ...componentMap
+};
 
-### Components
-
-#### `<GravityProvider>`
-Context provider that manages the Apollo Client and connection lifecycle.
-
-```tsx
-<GravityProvider config={config} theme={theme}>
-  {children}
+<GravityProvider config={config} components={customComponents}>
+  <App />
 </GravityProvider>
 ```
 
-#### `<GravityContainer>`
-Render prop component providing flexible access to Gravity state.
+### Environment Configuration
 
-```tsx
-<GravityContainer>
-  {(gravity) => (
-    // Your UI here
-  )}
-</GravityContainer>
+```bash
+# .env
+VITE_GRAPHQL_HTTP_URL=http://localhost:4100/graphql
+VITE_AGENT_API_KEY=your-api-key
 ```
 
-## Configuration
+## API Reference
 
-```tsx
-interface GravityConfig {
-  connection: {
-    apiUrl: string;
-    apiKey: string;
-    headers?: Record<string, string>;
-  };
-}
-```
+### Components
 
-## Real-time Streaming
+- `GravityProvider` - Root provider component
+- `withGravity(Component, options)` - HOC for creating smart components
 
-The library handles real-time AI responses through GraphQL subscriptions:
+### Hooks
 
-```tsx
-// Messages stream in real-time
-const { fullMessage, currentChunk } = useActiveResponse();
+- `useGravity()` - Main hook for gravity state and actions
+- `useActiveResponse()` - Hook for active AI response state
+- `useConnection()` - Hook for connection-specific state
+- `useGravityStore()` - Direct store access
 
-// Progress updates
-const { progressUpdate } = useActiveResponse();
-if (progressUpdate) {
-  console.log(`Progress: ${progressUpdate.progress}%`);
-}
+### Utilities
 
-// Action suggestions
-const { actionSuggestion } = useActiveResponse();
-if (actionSuggestion) {
-  // Render action buttons
-}
-```
+- `toggleSidebar(forceState?)` - Toggle sidebar state
+- `setActiveObject(objectId?)` - Set active object ID
 
 ## Development
 
@@ -210,14 +294,14 @@ if (actionSuggestion) {
 # Install dependencies
 npm install
 
-# Build
+# Build library
 npm run build
-
-# Watch mode
-npm run dev
 
 # Generate GraphQL types
 npm run codegen
+
+# Development mode
+npm run dev
 ```
 
 ## License
@@ -226,4 +310,4 @@ MIT
 
 ## Support
 
-For issues and questions, please visit our [GitHub repository](https://github.com/gravityai-dev/gravity-client).
+For support and questions, please refer to the main Gravity AI documentation.

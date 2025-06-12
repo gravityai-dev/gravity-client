@@ -7,7 +7,7 @@ import { ActiveResponseState } from "../types";
 
 // Response slice interface - flattened for easy access
 export interface ResponseSlice extends ActiveResponseState {
-  startActiveResponse: (chatId: string, conversationId: string, userId: string) => void;
+  startActiveResponse: (conversationId: string, chatId: string, userId: string) => void;
   processMessage: (message: any) => void;
   completeActiveResponse: () => void;
   clearActiveResponse: () => void;
@@ -18,7 +18,6 @@ const initialActiveResponseState: ActiveResponseState = {
   conversationId: null,
   chatId: null,
   userId: null,
-  state: "idle",
   messageSource: null,
 
   // Tier 1 & 2 JSON storage (Tier 3 bypasses state and goes directly to UI)
@@ -37,15 +36,15 @@ const initialActiveResponseState: ActiveResponseState = {
 export const createResponseSlice = (set: any, get: any, api: any): ResponseSlice => ({
   ...initialActiveResponseState,
 
-  startActiveResponse: (chatId: string, conversationId: string, userId: string) => {
+  startActiveResponse: (conversationId: string, chatId: string, userId: string) => {
     set((state: any) => ({
-      ...initialActiveResponseState,
-      chatId,
+      ...state,
       conversationId,
+      chatId,
       userId,
-      state: "thinking",
-      messageSource: "user",
+      messageSource: "agent",
       startTime: Date.now(),
+      endTime: null,
     }));
   },
 
@@ -53,43 +52,41 @@ export const createResponseSlice = (set: any, get: any, api: any): ResponseSlice
     set((state: any) => {
       const newState = { ...state };
 
-      // Set state to responding when we start receiving messages
-      if (newState.state === "thinking") {
-        newState.state = "responding";
-        newState.messageSource = "agent";
-      }
-
       // Process different message types flexibly
       switch (message.__typename) {
         case "MessageChunk":
           // Tier 2: Structured streaming chunks for real-time text display
-          newState.messageChunks = [...newState.messageChunks, message];
-
-          // Update current chunk and build full message
-          if (message.text) {
-            newState.text = message.text;
-          }
-          break;
-
-        case "TextMessage":
-        case "Text":
-          // Tier 2: Structured text messages (semantic content)
-          newState.text = message;
+          newState.messageChunks = [...(newState.messageChunks || []), message];
           break;
 
         case "ProgressUpdate":
-          // Tier 2: Structured progress updates (semantic state)
+          // Tier 2: Structured progress updates (semantic UI state)
           newState.progressUpdate = message;
+          break;
+
+        case "Text":
+          // Tier 2: Structured text messages
+          newState.text = message;
           break;
 
         case "JsonData":
           // Tier 1: Raw JSON data from server
-          newState.jsonData = [...newState.jsonData, message];
+          newState.jsonData = [...(newState.jsonData || []), message];
           break;
 
         case "ActionSuggestion":
           // Tier 2: Structured action suggestions (semantic UI state)
           newState.actionSuggestion = message;
+          break;
+
+        case "State":
+          // Handle State messages - update appState directly in newState
+          const stateValue = message.component?.props?.state;
+          if (stateValue) {
+            const appState = stateValue.toLowerCase();
+            // Update appState directly in newState (single atomic update)
+            newState.appState = appState;
+          }
           break;
 
         case "SystemMessage":
@@ -119,6 +116,20 @@ export const createResponseSlice = (set: any, get: any, api: any): ResponseSlice
   },
 
   clearActiveResponse: () => {
-    set((state: any) => ({ ...initialActiveResponseState }));
+    set((state: any) => ({
+      ...state,
+      // Reset all response slice data to initial state
+      conversationId: null,
+      chatId: null,
+      userId: null,
+      messageSource: null,
+      messageChunks: [],
+      progressUpdate: null,
+      jsonData: [],
+      actionSuggestion: null,
+      text: null,
+      startTime: null,
+      endTime: null,
+    }));
   },
 });

@@ -4,7 +4,7 @@
  */
 
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createConnectionSlice, ConnectionSlice } from './slices/connection';
 import { createConversationSlice, ConversationSlice } from './slices/conversation';
 import { createResponseSlice, ResponseSlice } from './slices/response';
@@ -20,12 +20,14 @@ export interface GravityStore extends
 // Create the store
 export const useGravityStore = create<GravityStore>()(
   devtools(
-    (...args) => ({
-      ...createConnectionSlice(...args),
-      ...createConversationSlice(...args),
-      ...createResponseSlice(...args),
-      ...createUISlice(...args),
-    }),
+    subscribeWithSelector(
+      (...args) => ({
+        ...createConnectionSlice(...args),
+        ...createConversationSlice(...args),
+        ...createResponseSlice(...args),
+        ...createUISlice(...args),
+      }),
+    ),
     {
       name: 'gravity-store',
     }

@@ -3,17 +3,17 @@
  * Handles GraphQL client setup and SSE connection management
  */
 
-import { ApolloClient, InMemoryCache, split, HttpLink } from '@apollo/client';
-import { YogaLink } from '@graphql-yoga/apollo-link';
-import { getMainDefinition } from '@apollo/client/utilities';
-import { ConnectionState } from '../types';
-import { ConnectionConfig } from '../../types/config';
+import { ApolloClient, InMemoryCache, split, HttpLink } from "@apollo/client";
+import { YogaLink } from "@graphql-yoga/apollo-link";
+import { getMainDefinition } from "@apollo/client/utilities";
+import { ConnectionState } from "../types";
+import { ConnectionConfig } from "../../types/config";
+import { AI_RESULT_SUBSCRIPTION } from "../../graphql/subscriptions";
 
 // Connection slice interface - flattened for easy access
 export interface ConnectionSlice extends ConnectionState {
   connect: (config: ConnectionConfig) => Promise<void>;
   disconnect: () => void;
-  setupSubscription: (conversationId: string) => void;
   cleanupSubscription: () => void;
 }
 
@@ -26,14 +26,11 @@ const initialConnectionState: ConnectionState = {
   config: null,
   subscriptions: new Map(),
   lastConnected: null,
+  conversationId: null,
 };
 
 // Create connection slice
-export const createConnectionSlice = (
-  set: any,
-  get: any,
-  api: any
-): ConnectionSlice => ({
+export const createConnectionSlice = (set: any, get: any, api: any): ConnectionSlice => ({
   ...initialConnectionState,
 
   connect: async (config: ConnectionConfig) => {
@@ -50,7 +47,7 @@ export const createConnectionSlice = (
         uri: config.endpoint,
         headers: {
           ...config.headers,
-          ...(config.apiKey ? { 'x-api-key': config.apiKey } : {}),
+          ...(config.apiKey ? { "x-agent-key": config.apiKey } : {}),
         },
       });
 
@@ -60,18 +57,16 @@ export const createConnectionSlice = (
         endpoint: config.endpoint, // Use the same HTTP endpoint - not a WebSocket URL
         headers: {
           ...config.headers,
-          ...(config.apiKey ? { 'x-api-key': config.apiKey } : {}),
+          ...(config.apiKey ? { "x-agent-key": config.apiKey } : {}),
         },
-        credentials: 'include',
+        credentials: "include",
       });
 
       // Split link based on operation type
       const splitLink = split(
         ({ query }) => {
           const definition = getMainDefinition(query);
-          return (
-            definition.kind === 'OperationDefinition' && definition.operation === 'subscription'
-          );
+          return definition.kind === "OperationDefinition" && definition.operation === "subscription";
         },
         sseLink,
         httpLink
@@ -93,10 +88,10 @@ export const createConnectionSlice = (
         }),
         defaultOptions: {
           watchQuery: {
-            errorPolicy: 'all',
+            errorPolicy: "all",
           },
           query: {
-            errorPolicy: 'all',
+            errorPolicy: "all",
           },
         },
       });
@@ -109,13 +104,54 @@ export const createConnectionSlice = (
         lastConnected: new Date(),
       }));
 
-      console.log('✓ Connected to Gravity AI with SSE support');
+      // Set up ONE subscription for the session
+      // Get conversationId from cookie or generate new one
+      let conversationId = localStorage.getItem("gravity-conversationId");
+      if (!conversationId) {
+        conversationId = `conv_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        localStorage.setItem("gravity-conversationId", conversationId);
+      }
+
+      try {
+        const subscription = client.subscribe({
+          query: AI_RESULT_SUBSCRIPTION,
+          variables: { conversationId },
+        });
+
+        const observableSubscription = subscription.subscribe({
+          next: (result: any) => {
+            if (result.data?.aiResult) {
+              console.log('📨 SUBSCRIPTION:', result.data.aiResult);
+              const processMessage = get().processMessage;
+              if (processMessage) {
+                processMessage(result.data.aiResult);
+              }
+            }
+          },
+          error: (error: any) => {
+            console.error("❌ Subscription error:", error);
+          },
+        });
+
+        // Store the subscription and conversationId
+        const subscriptions = get().subscriptions;
+        subscriptions.set("session", observableSubscription);
+
+        // Set this as the default conversationId for the session
+        set((state: any) => ({
+          ...state,
+          conversationId: conversationId,
+        }));
+      } catch (error) {
+        console.error("[GravityClient] ❌ Failed to setup subscription:", error);
+      }
+
     } catch (error) {
-      console.error('Failed to connect to Gravity AI:', error);
+      console.error("Failed to connect to Gravity AI:", error);
       set((state: any) => ({
         ...state,
         isConnecting: false,
-        error: error instanceof Error ? error.message : 'Connection failed',
+        error: error instanceof Error ? error.message : "Connection failed",
       }));
       throw error;
     }
@@ -127,7 +163,7 @@ export const createConnectionSlice = (
 
     // Cleanup subscriptions
     subscriptions.forEach((sub: any) => {
-      if (sub && typeof sub.unsubscribe === 'function') {
+      if (sub && typeof sub.unsubscribe === "function") {
         sub.unsubscribe();
       }
     });
@@ -142,12 +178,6 @@ export const createConnectionSlice = (
       config: state.config, // Keep config for reconnection
     }));
 
-    console.log('✓ Disconnected from Gravity AI');
-  },
-
-  setupSubscription: (conversationId: string) => {
-    // TODO: Implement SSE subscription setup
-    console.log('Setting up SSE subscription for:', conversationId);
   },
 
   cleanupSubscription: () => {

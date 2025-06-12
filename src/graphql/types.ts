@@ -1,5 +1,3 @@
-import { gql } from '@apollo/client';
-import * as Apollo from '@apollo/client';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
@@ -7,7 +5,6 @@ export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: 
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
 export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = { [_ in K]?: never };
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
-const defaultOptions = {} as const;
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
   ID: { input: string; output: string; }
@@ -15,7 +12,7 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean; }
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
-  DateTime: { input: any; output: any; }
+  DateTime: { input: string; output: string; }
   JSON: { input: any; output: any; }
 };
 
@@ -91,14 +88,14 @@ export type CancelResponse = {
 };
 
 export enum ChatState {
-  Active = 'ACTIVE',
-  Cancelled = 'CANCELLED',
-  Complete = 'COMPLETE',
-  Error = 'ERROR',
-  Idle = 'IDLE',
-  Responding = 'RESPONDING',
-  Thinking = 'THINKING',
-  Waiting = 'WAITING'
+  ACTIVE = 'ACTIVE',
+  CANCELLED = 'CANCELLED',
+  COMPLETE = 'COMPLETE',
+  ERROR = 'ERROR',
+  IDLE = 'IDLE',
+  RESPONDING = 'RESPONDING',
+  THINKING = 'THINKING',
+  WAITING = 'WAITING'
 }
 
 export type ChatStatus = {
@@ -131,7 +128,6 @@ export type Credential = {
   __typename?: 'Credential';
   createdAt: Scalars['String']['output'];
   id: Scalars['ID']['output'];
-  metadata?: Maybe<Scalars['JSON']['output']>;
   name: Scalars['String']['output'];
   type: Scalars['String']['output'];
   updatedAt: Scalars['String']['output'];
@@ -139,30 +135,100 @@ export type Credential = {
 
 export type CredentialInput = {
   data: Scalars['JSON']['input'];
-  metadata?: InputMaybe<Scalars['JSON']['input']>;
   name: Scalars['String']['input'];
   type: Scalars['String']['input'];
 };
 
+export type CredentialProperty = {
+  __typename?: 'CredentialProperty';
+  default?: Maybe<Scalars['String']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  displayName: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  placeholder?: Maybe<Scalars['String']['output']>;
+  required: Scalars['Boolean']['output'];
+  secret: Scalars['Boolean']['output'];
+  type: Scalars['String']['output'];
+};
+
+export type CredentialType = {
+  __typename?: 'CredentialType';
+  description: Scalars['String']['output'];
+  displayName: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  properties: Array<CredentialProperty>;
+};
+
+export type CredentialWithData = {
+  __typename?: 'CredentialWithData';
+  createdAt: Scalars['String']['output'];
+  data: Scalars['JSON']['output'];
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+  updatedAt: Scalars['String']['output'];
+};
+
 export type DebugNodeInput = {
-  input: Scalars['JSON']['input'];
-  nodeConfig: Scalars['JSON']['input'];
-  nodeType: Scalars['String']['input'];
+  config?: InputMaybe<Scalars['JSON']['input']>;
+  context?: InputMaybe<Scalars['JSON']['input']>;
+  nodeId?: InputMaybe<Scalars['String']['input']>;
+  nodeType?: InputMaybe<Scalars['String']['input']>;
+  serviceProviders?: InputMaybe<Scalars['JSON']['input']>;
+  testInputs?: InputMaybe<Scalars['JSON']['input']>;
+  workflowId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type DebugNodeResult = {
   __typename?: 'DebugNodeResult';
+  duration?: Maybe<Scalars['Int']['output']>;
   error?: Maybe<Scalars['String']['output']>;
-  executionTime?: Maybe<Scalars['Float']['output']>;
-  logs?: Maybe<Array<Scalars['String']['output']>>;
   output?: Maybe<Scalars['JSON']['output']>;
   success: Scalars['Boolean']['output'];
+  workflow?: Maybe<WorkflowContext>;
 };
 
 export type DeleteExecutionsResult = {
   __typename?: 'DeleteExecutionsResult';
   deletedCount: Scalars['Int']['output'];
   success: Scalars['Boolean']['output'];
+};
+
+export type ExecutionSummary = {
+  __typename?: 'ExecutionSummary';
+  averageNodeDuration?: Maybe<Scalars['Float']['output']>;
+  completedAt?: Maybe<Scalars['String']['output']>;
+  completedNodes: Scalars['Int']['output'];
+  duration?: Maybe<Scalars['Int']['output']>;
+  executionId: Scalars['ID']['output'];
+  failedNodes: Scalars['Int']['output'];
+  startedAt: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  totalNodes: Scalars['Int']['output'];
+  workflowId: Scalars['ID']['output'];
+  workflowName?: Maybe<Scalars['String']['output']>;
+};
+
+export type ExecutionTimelineItem = {
+  __typename?: 'ExecutionTimelineItem';
+  duration?: Maybe<Scalars['Float']['output']>;
+  endTime?: Maybe<Scalars['Float']['output']>;
+  error?: Maybe<Scalars['String']['output']>;
+  inputs?: Maybe<Scalars['JSON']['output']>;
+  nodeId: Scalars['ID']['output'];
+  nodeName?: Maybe<Scalars['String']['output']>;
+  nodeType: Scalars['String']['output'];
+  outputs?: Maybe<Scalars['JSON']['output']>;
+  relativeEnd?: Maybe<Scalars['Float']['output']>;
+  relativeStart: Scalars['Float']['output'];
+  startTime: Scalars['Float']['output'];
+  status: Scalars['String']['output'];
+};
+
+export type HealthStatus = {
+  __typename?: 'HealthStatus';
+  healthy: Scalars['Boolean']['output'];
+  warnings: Array<Scalars['String']['output']>;
 };
 
 export type ImageResponse = BaseEvent & {
@@ -359,29 +425,24 @@ export type NodeCredential = {
   required: Scalars['Boolean']['output'];
 };
 
-export type NodeExecution = {
-  __typename?: 'NodeExecution';
-  endTime?: Maybe<Scalars['String']['output']>;
-  error?: Maybe<Scalars['String']['output']>;
-  input?: Maybe<Scalars['JSON']['output']>;
-  nodeId: Scalars['String']['output'];
-  output?: Maybe<Scalars['JSON']['output']>;
-  retryCount: Scalars['Int']['output'];
-  startTime: Scalars['String']['output'];
-  status: Scalars['String']['output'];
-};
-
 export type NodeExecutionEvent = {
   __typename?: 'NodeExecutionEvent';
+  duration?: Maybe<Scalars['Int']['output']>;
   error?: Maybe<Scalars['String']['output']>;
   executionId: Scalars['ID']['output'];
-  input?: Maybe<Scalars['JSON']['output']>;
-  metadata?: Maybe<Scalars['JSON']['output']>;
-  nodeId: Scalars['String']['output'];
-  output?: Maybe<Scalars['JSON']['output']>;
-  status: Scalars['String']['output'];
+  nodeId: Scalars['ID']['output'];
+  nodeType: Scalars['String']['output'];
+  outputs?: Maybe<Scalars['JSON']['output']>;
+  state: NodeExecutionState;
   timestamp: Scalars['String']['output'];
+  workflowId: Scalars['ID']['output'];
 };
+
+export enum NodeExecutionState {
+  COMPLETED = 'COMPLETED',
+  ERROR = 'ERROR',
+  STARTED = 'STARTED'
+}
 
 export type NodeInteraction = {
   __typename?: 'NodeInteraction';
@@ -406,6 +467,18 @@ export type NodeInteractionResult = {
   success: Scalars['Boolean']['output'];
 };
 
+export type NodePerformance = {
+  __typename?: 'NodePerformance';
+  averageDuration: Scalars['Float']['output'];
+  executionCount: Scalars['Int']['output'];
+  lastExecuted: Scalars['String']['output'];
+  maxDuration: Scalars['Float']['output'];
+  minDuration: Scalars['Float']['output'];
+  nodeId: Scalars['ID']['output'];
+  nodeType: Scalars['String']['output'];
+  successRate: Scalars['Float']['output'];
+};
+
 export type NodePort = {
   __typename?: 'NodePort';
   description?: Maybe<Scalars['String']['output']>;
@@ -423,16 +496,15 @@ export type NodeServices = {
 
 export type NodeTrace = {
   __typename?: 'NodeTrace';
-  createdAt: Scalars['String']['output'];
   duration?: Maybe<Scalars['Float']['output']>;
-  endTime?: Maybe<Scalars['String']['output']>;
+  endTime?: Maybe<Scalars['Float']['output']>;
   error?: Maybe<Scalars['String']['output']>;
   executionId: Scalars['ID']['output'];
   inputs?: Maybe<Scalars['JSON']['output']>;
   nodeId: Scalars['String']['output'];
   nodeType: Scalars['String']['output'];
   outputs?: Maybe<Scalars['JSON']['output']>;
-  startTime: Scalars['String']['output'];
+  startTime: Scalars['Float']['output'];
   status: Scalars['String']['output'];
   traceId: Scalars['ID']['output'];
 };
@@ -476,11 +548,11 @@ export type ProviderStatus = {
 export type Query = {
   __typename?: 'Query';
   _empty?: Maybe<Scalars['String']['output']>;
-  credential?: Maybe<Credential>;
-  credentialTypes: Scalars['JSON']['output'];
+  credential?: Maybe<CredentialWithData>;
+  credentialTypes: Array<CredentialType>;
   credentials: Array<Credential>;
-  executionSummary: Scalars['JSON']['output'];
-  executionTimeline: Scalars['JSON']['output'];
+  executionSummary?: Maybe<ExecutionSummary>;
+  executionTimeline: Array<ExecutionTimelineItem>;
   getAgentTypes: AgentTypeInfo;
   getChatStatus: ChatStatus;
   health: SystemStatus;
@@ -490,17 +562,17 @@ export type Query = {
   mcpStatus: ProviderStatus;
   mcpTools: McpToolsResponse;
   n8nStatus: ProviderStatus;
-  nodePerformanceMetrics: Scalars['JSON']['output'];
+  nodePerformanceMetrics: Array<NodePerformance>;
   nodeTraces: Array<NodeTrace>;
   nodeTypes: Array<NodeType>;
   ping: Scalars['String']['output'];
   queueMetrics: Array<QueueMetrics>;
   registryDashboard: RegistryDashboard;
-  systemPerformanceMetrics: Scalars['JSON']['output'];
+  systemPerformanceMetrics: SystemPerformanceMetrics;
   workflow?: Maybe<Workflow>;
   workflowExecution?: Maybe<WorkflowExecution>;
-  workflowExecutions: WorkflowExecutionsResponse;
-  workflowPerformanceOverview: Scalars['JSON']['output'];
+  workflowExecutions: Array<WorkflowExecution>;
+  workflowPerformanceOverview?: Maybe<WorkflowPerformanceOverview>;
   workflows: Array<Workflow>;
 };
 
@@ -531,13 +603,15 @@ export type QueryMcpServerArgs = {
 
 
 export type QueryNodePerformanceMetricsArgs = {
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  nodeType?: InputMaybe<Scalars['String']['input']>;
+  endDate?: InputMaybe<Scalars['String']['input']>;
+  startDate?: InputMaybe<Scalars['String']['input']>;
+  workflowId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 
 export type QueryNodeTracesArgs = {
   executionId: Scalars['ID']['input'];
+  nodeId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 
@@ -553,7 +627,6 @@ export type QueryWorkflowExecutionArgs = {
 
 export type QueryWorkflowExecutionsArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
-  offset?: InputMaybe<Scalars['Int']['input']>;
   workflowId: Scalars['ID']['input'];
 };
 
@@ -566,11 +639,13 @@ export type QueryWorkflowPerformanceOverviewArgs = {
 export type QueueMetrics = {
   __typename?: 'QueueMetrics';
   active: Scalars['Int']['output'];
+  avgProcessingTime: Scalars['Float']['output'];
   completed: Scalars['Int']['output'];
   delayed: Scalars['Int']['output'];
   failed: Scalars['Int']['output'];
+  name: Scalars['String']['output'];
   paused: Scalars['Int']['output'];
-  queueName: Scalars['String']['output'];
+  throughput: Scalars['Float']['output'];
   waiting: Scalars['Int']['output'];
 };
 
@@ -664,6 +739,24 @@ export type SystemHealth = {
   timestamp: Scalars['String']['output'];
 };
 
+export type SystemMetrics = {
+  __typename?: 'SystemMetrics';
+  cpuUsage: Scalars['Float']['output'];
+  memoryUsage: Scalars['Float']['output'];
+  redisConnections: Scalars['Int']['output'];
+  redisMemory: Scalars['String']['output'];
+  redisOps: Scalars['Int']['output'];
+  workerCount: Scalars['Int']['output'];
+};
+
+export type SystemPerformanceMetrics = {
+  __typename?: 'SystemPerformanceMetrics';
+  health: HealthStatus;
+  queues: Array<QueueMetrics>;
+  system: SystemMetrics;
+  timestamp: Scalars['String']['output'];
+};
+
 export type SystemStatus = {
   __typename?: 'SystemStatus';
   graphql: ProviderStatus;
@@ -707,37 +800,29 @@ export type Workflow = {
   createdAt: Scalars['String']['output'];
   description?: Maybe<Scalars['String']['output']>;
   edges: Scalars['JSON']['output'];
-  executions: WorkflowExecutionsResponse;
   id: Scalars['ID']['output'];
+  isCached: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
   nodes: Scalars['JSON']['output'];
   updatedAt: Scalars['String']['output'];
 };
 
-
-export type WorkflowExecutionsArgs = {
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  offset?: InputMaybe<Scalars['Int']['input']>;
+export type WorkflowContext = {
+  __typename?: 'WorkflowContext';
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  variables: Scalars['JSON']['output'];
 };
 
 export type WorkflowExecution = {
   __typename?: 'WorkflowExecution';
-  endTime?: Maybe<Scalars['String']['output']>;
-  error?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  input?: Maybe<Scalars['JSON']['output']>;
-  nodeExecutions: Array<NodeExecution>;
-  output?: Maybe<Scalars['JSON']['output']>;
-  startTime: Scalars['String']['output'];
+  completedAt?: Maybe<Scalars['String']['output']>;
+  executionId: Scalars['ID']['output'];
+  result?: Maybe<Scalars['JSON']['output']>;
+  startedAt: Scalars['String']['output'];
   status: Scalars['String']['output'];
+  wasFromCache: Scalars['Boolean']['output'];
   workflowId: Scalars['ID']['output'];
-};
-
-export type WorkflowExecutionsResponse = {
-  __typename?: 'WorkflowExecutionsResponse';
-  executions: Array<WorkflowExecution>;
-  hasMore: Scalars['Boolean']['output'];
-  total: Scalars['Int']['output'];
 };
 
 export type WorkflowInput = {
@@ -747,6 +832,19 @@ export type WorkflowInput = {
   id?: InputMaybe<Scalars['ID']['input']>;
   name: Scalars['String']['input'];
   nodes: Scalars['JSON']['input'];
+};
+
+export type WorkflowPerformanceOverview = {
+  __typename?: 'WorkflowPerformanceOverview';
+  averageDuration?: Maybe<Scalars['Float']['output']>;
+  failedExecutions: Scalars['Int']['output'];
+  maxDuration?: Maybe<Scalars['Float']['output']>;
+  medianDuration?: Maybe<Scalars['Float']['output']>;
+  minDuration?: Maybe<Scalars['Float']['output']>;
+  p95Duration?: Maybe<Scalars['Float']['output']>;
+  successRate: Scalars['Float']['output'];
+  successfulExecutions: Scalars['Int']['output'];
+  totalExecutions: Scalars['Int']['output'];
 };
 
 export type TalkToAgentMutationVariables = Exact<{
@@ -762,88 +860,3 @@ export type GetChatStatusQueryVariables = Exact<{
 
 
 export type GetChatStatusQuery = { __typename?: 'Query', getChatStatus: { __typename?: 'ChatStatus', exists: boolean, status?: string | null, startTime?: string | null, message?: string | null, error?: string | null } };
-
-
-export const TalkToAgentDocument = gql`
-    mutation TalkToAgent($input: AgentInput!) {
-  talkToAgent(input: $input) {
-    chatId
-    conversationId
-    userId
-    executionId
-    providerId
-    success
-    message
-  }
-}
-    `;
-export type TalkToAgentMutationFn = Apollo.MutationFunction<TalkToAgentMutation, TalkToAgentMutationVariables>;
-
-/**
- * __useTalkToAgentMutation__
- *
- * To run a mutation, you first call `useTalkToAgentMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useTalkToAgentMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [talkToAgentMutation, { data, loading, error }] = useTalkToAgentMutation({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useTalkToAgentMutation(baseOptions?: Apollo.MutationHookOptions<TalkToAgentMutation, TalkToAgentMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<TalkToAgentMutation, TalkToAgentMutationVariables>(TalkToAgentDocument, options);
-      }
-export type TalkToAgentMutationHookResult = ReturnType<typeof useTalkToAgentMutation>;
-export type TalkToAgentMutationResult = Apollo.MutationResult<TalkToAgentMutation>;
-export type TalkToAgentMutationOptions = Apollo.BaseMutationOptions<TalkToAgentMutation, TalkToAgentMutationVariables>;
-export const GetChatStatusDocument = gql`
-    query GetChatStatus($chatId: ID!) {
-  getChatStatus(chatId: $chatId) {
-    exists
-    status
-    startTime
-    message
-    error
-  }
-}
-    `;
-
-/**
- * __useGetChatStatusQuery__
- *
- * To run a query within a React component, call `useGetChatStatusQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetChatStatusQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetChatStatusQuery({
- *   variables: {
- *      chatId: // value for 'chatId'
- *   },
- * });
- */
-export function useGetChatStatusQuery(baseOptions: Apollo.QueryHookOptions<GetChatStatusQuery, GetChatStatusQueryVariables> & ({ variables: GetChatStatusQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<GetChatStatusQuery, GetChatStatusQueryVariables>(GetChatStatusDocument, options);
-      }
-export function useGetChatStatusLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetChatStatusQuery, GetChatStatusQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<GetChatStatusQuery, GetChatStatusQueryVariables>(GetChatStatusDocument, options);
-        }
-export function useGetChatStatusSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetChatStatusQuery, GetChatStatusQueryVariables>) {
-          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<GetChatStatusQuery, GetChatStatusQueryVariables>(GetChatStatusDocument, options);
-        }
-export type GetChatStatusQueryHookResult = ReturnType<typeof useGetChatStatusQuery>;
-export type GetChatStatusLazyQueryHookResult = ReturnType<typeof useGetChatStatusLazyQuery>;
-export type GetChatStatusSuspenseQueryHookResult = ReturnType<typeof useGetChatStatusSuspenseQuery>;
-export type GetChatStatusQueryResult = Apollo.QueryResult<GetChatStatusQuery, GetChatStatusQueryVariables>;

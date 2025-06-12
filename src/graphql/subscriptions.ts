@@ -49,7 +49,7 @@ export const AI_RESULT_SUBSCRIPTION = gql`
         userId
         providerId
         timestamp
-        data
+        jsonData: data
         component {
           type
           props
@@ -106,18 +106,6 @@ export const AI_RESULT_SUBSCRIPTION = gql`
           props
         }
       }
-      ... on AudioChunk {
-        chatId
-        conversationId
-        userId
-        providerId
-        timestamp
-        audioData
-        format
-        duration
-        textReference
-        sourceType
-      }
       ... on State {
         chatId
         conversationId
@@ -128,7 +116,7 @@ export const AI_RESULT_SUBSCRIPTION = gql`
           type
           props
         }
-        data
+        stateData: data
         label
         variables
       }

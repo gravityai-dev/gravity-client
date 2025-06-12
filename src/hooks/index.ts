@@ -2,6 +2,6 @@
  * Gravity Client Hooks
  */
 
-export { useGravity } from './useGravity';
-export { useActiveResponse } from './useActiveResponse';
-export { useConnection } from './useConnection';
+export { useConnection } from "./useConnection";
+export { useActiveResponse } from "./useActiveResponse";
+export { useGravity } from "./useGravity";

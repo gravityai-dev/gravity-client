@@ -1,16 +1,23 @@
 {
   "name": "@gravityai-dev/gravity-client",
-  "version": "1.0.0",
+  "version": "0.2.61",
   "description": "Clean, organized client library for Gravity AI with real-time streaming and 3-tier JSON architecture",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
   "files": [
     "dist",
     "README.md"
   ],
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "tsup",
+    "dev": "tsup --watch --force",
     "clean": "rm -rf dist",
     "prepublishOnly": "npm run clean && npm run build",
     "codegen": "graphql-codegen --config codegen.yml"
@@ -36,6 +43,7 @@
     "@graphql-codegen/typescript": "^4.0.0",
     "@graphql-codegen/typescript-operations": "^4.0.0",
     "@types/react": "^18.2.0",
+    "tsup": "^8.0.0",
     "typescript": "^5.2.0"
   },
   "peerDependencies": {
