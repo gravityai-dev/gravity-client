@@ -121,7 +121,7 @@ export const createConnectionSlice = (set: any, get: any, api: any): ConnectionS
         const observableSubscription = subscription.subscribe({
           next: (result: any) => {
             if (result.data?.aiResult) {
-              console.log('📨 SUBSCRIPTION:', result.data.aiResult);
+              console.log("📨 SUBSCRIPTION:", result.data.aiResult);
               const processMessage = get().processMessage;
               if (processMessage) {
                 processMessage(result.data.aiResult);
@@ -145,7 +145,6 @@ export const createConnectionSlice = (set: any, get: any, api: any): ConnectionS
       } catch (error) {
         console.error("[GravityClient] ❌ Failed to setup subscription:", error);
       }
-
     } catch (error) {
       console.error("Failed to connect to Gravity AI:", error);
       set((state: any) => ({
@@ -177,7 +176,6 @@ export const createConnectionSlice = (set: any, get: any, api: any): ConnectionS
       ...initialConnectionState,
       config: state.config, // Keep config for reconnection
     }));
-
   },
 
   cleanupSubscription: () => {

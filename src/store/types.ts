@@ -32,6 +32,7 @@ export interface ActiveResponseState {
   jsonData: any[]; // Raw JSON data from server
   actionSuggestion: any | null; // Latest action suggestions
   text: any | null; // Latest text message
+  cards: any | null; // Card components from server
 
   // Timing
   startTime: number | null;

@@ -28,7 +28,7 @@ export type ActionSuggestion = BaseEvent & {
   userId: Scalars['ID']['output'];
 };
 
-export type AgentEvent = ActionSuggestion | AudioChunk | ImageResponse | JsonData | MessageChunk | Metadata | ProgressUpdate | State | Text | ToolOutput;
+export type AgentEvent = ActionSuggestion | AudioChunk | Cards | ImageResponse | JsonData | MessageChunk | Metadata | ProgressUpdate | State | Text | ToolOutput;
 
 export type AgentInput = {
   chatId: Scalars['ID']['input'];
@@ -85,6 +85,16 @@ export type CancelResponse = {
   chatId: Scalars['ID']['output'];
   message: Scalars['String']['output'];
   success: Scalars['Boolean']['output'];
+};
+
+export type Cards = BaseEvent & {
+  __typename?: 'Cards';
+  chatId: Scalars['ID']['output'];
+  component?: Maybe<ComponentSpec>;
+  conversationId: Scalars['ID']['output'];
+  providerId?: Maybe<Scalars['String']['output']>;
+  timestamp?: Maybe<Scalars['String']['output']>;
+  userId: Scalars['ID']['output'];
 };
 
 export enum ChatState {
@@ -454,16 +464,18 @@ export type NodeInteraction = {
 };
 
 export type NodeInteractionInput = {
-  executionId: Scalars['ID']['input'];
-  interactionType: Scalars['String']['input'];
+  interactionId: Scalars['String']['input'];
   nodeId: Scalars['String']['input'];
-  payload: Scalars['JSON']['input'];
+  params?: InputMaybe<Scalars['JSON']['input']>;
+  workflowId: Scalars['ID']['input'];
 };
 
 export type NodeInteractionResult = {
   __typename?: 'NodeInteractionResult';
+  data?: Maybe<Scalars['JSON']['output']>;
   error?: Maybe<Scalars['String']['output']>;
-  output?: Maybe<Scalars['JSON']['output']>;
+  jobId?: Maybe<Scalars['String']['output']>;
+  progress?: Maybe<Scalars['Float']['output']>;
   success: Scalars['Boolean']['output'];
 };
 

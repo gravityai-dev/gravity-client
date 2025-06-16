@@ -26,6 +26,7 @@ const initialActiveResponseState: ActiveResponseState = {
   jsonData: [], // Tier 1: Raw JSON data from server
   actionSuggestion: null, // Tier 2: Structured action suggestions
   text: null, // Tier 2: Structured text
+  cards: null, // Tier 2: Card components from server
 
   // Timing
   startTime: null,
@@ -79,6 +80,11 @@ export const createResponseSlice = (set: any, get: any, api: any): ResponseSlice
           newState.actionSuggestion = message;
           break;
 
+        case "Cards":
+          // Tier 2: Card components from server
+          newState.cards = message;
+          break;
+
         case "State":
           // Handle State messages - update appState directly in newState
           const stateValue = message.component?.props?.state;
@@ -128,6 +134,7 @@ export const createResponseSlice = (set: any, get: any, api: any): ResponseSlice
       jsonData: [],
       actionSuggestion: null,
       text: null,
+      cards: null,
       startTime: null,
       endTime: null,
     }));

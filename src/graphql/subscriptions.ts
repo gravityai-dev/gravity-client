@@ -120,6 +120,17 @@ export const AI_RESULT_SUBSCRIPTION = gql`
         label
         variables
       }
+      ... on Cards {
+        chatId
+        conversationId
+        userId
+        providerId
+        timestamp
+        component {
+          type
+          props
+        }
+      }
     }
   }
 `;

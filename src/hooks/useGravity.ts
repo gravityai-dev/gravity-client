@@ -34,6 +34,7 @@ export function useGravity() {
         jsonData: state.jsonData,
         actionSuggestion: state.actionSuggestion,
         text: state.text,
+        cards: state.cards,
         startTime: state.startTime,
         endTime: state.endTime,
         startActiveResponse: state.startActiveResponse,
