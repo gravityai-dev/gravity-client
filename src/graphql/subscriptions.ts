@@ -131,6 +131,25 @@ export const AI_RESULT_SUBSCRIPTION = gql`
           props
         }
       }
+      ... on NodeExecution {
+        chatId
+        conversationId
+        userId
+        providerId
+        timestamp
+        workflowId
+        workflowRunId
+        nodeId
+        nodeType
+        status
+        output
+        error
+        executionTime
+        component {
+          type
+          props
+        }
+      }
     }
   }
 `;

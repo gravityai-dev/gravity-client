@@ -18,6 +18,7 @@ export function useGravity() {
         connect: state.connect,
         disconnect: state.disconnect,
         cleanupSubscription: state.cleanupSubscription,
+        updateSubscription: state.updateSubscription,
 
         // Conversation slice
         conversationId: state.conversationId,

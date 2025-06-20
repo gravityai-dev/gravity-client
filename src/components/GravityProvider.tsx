@@ -3,26 +3,23 @@
  * Provides Gravity AI context and manages connection lifecycle
  */
 
-import React, { useEffect } from 'react';
-import { ApolloProvider } from '@apollo/client';
-import { useGravityStore } from '../store';
-import { GravityConfig } from '../types/config';
+import React, { useEffect } from "react";
+import { ApolloProvider } from "@apollo/client";
+import { useGravityStore } from "../store";
+import { GravityConfig } from "../types/config";
 
 interface GravityProviderProps {
   config: GravityConfig;
   children: React.ReactNode;
 }
 
-export const GravityProvider: React.FC<GravityProviderProps> = ({ 
-  config, 
-  children 
-}) => {
+export const GravityProvider: React.FC<GravityProviderProps> = ({ config, children }) => {
   const { connect, disconnect, client } = useGravityStore();
-  
+
   // Connect on mount with config
   useEffect(() => {
     connect(config);
-    
+
     return () => {
       disconnect();
     };
@@ -33,9 +30,5 @@ export const GravityProvider: React.FC<GravityProviderProps> = ({
     return <div>Connecting to Gravity AI...</div>;
   }
 
-  return (
-    <ApolloProvider client={client}>
-      {children}
-    </ApolloProvider>
-  );
+  return <ApolloProvider client={client}>{children}</ApolloProvider>;
 };

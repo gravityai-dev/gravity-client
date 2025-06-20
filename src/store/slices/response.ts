@@ -105,7 +105,7 @@ export const createResponseSlice = (set: any, get: any, api: any): ResponseSlice
 
         default:
           // For unknown message types, log them (don't store in state)
-          console.log("Unknown message type received:", message.__typename, message);
+          // console.log("Unknown message type received:", message.__typename, message);
           break;
       }
 
