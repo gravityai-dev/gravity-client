@@ -28,7 +28,7 @@ export type ActionSuggestion = BaseEvent & {
   userId: Scalars['ID']['output'];
 };
 
-export type AgentEvent = ActionSuggestion | AudioChunk | Cards | ImageResponse | JsonData | MessageChunk | Metadata | NodeExecution | ProgressUpdate | State | Text | ToolOutput;
+export type AgentEvent = ActionSuggestion | AudioChunk | Cards | ImageResponse | JsonData | MessageChunk | Metadata | ProgressUpdate | State | Text | ToolOutput;
 
 export type AgentInput = {
   chatId: Scalars['ID']['input'];
@@ -189,9 +189,9 @@ export type CredentialWithData = {
 };
 
 export enum DebugMode {
-  CLEAR = 'CLEAR',
   FULL_WORKFLOW = 'FULL_WORKFLOW',
   PLAY_TO_NODE = 'PLAY_TO_NODE',
+  RESET = 'RESET',
   SINGLE_NODE = 'SINGLE_NODE'
 }
 
@@ -204,7 +204,6 @@ export type DebugNodeInput = {
   nodeInputs?: InputMaybe<Scalars['JSON']['input']>;
   nodeType?: InputMaybe<Scalars['String']['input']>;
   serviceProviders?: InputMaybe<Scalars['JSON']['input']>;
-  testInputs?: InputMaybe<Scalars['JSON']['input']>;
   workflowId?: InputMaybe<Scalars['ID']['input']>;
 };
 
@@ -465,24 +464,6 @@ export type NodeCredential = {
   required: Scalars['Boolean']['output'];
 };
 
-export type NodeExecution = BaseEvent & {
-  __typename?: 'NodeExecution';
-  chatId: Scalars['ID']['output'];
-  component?: Maybe<ComponentSpec>;
-  conversationId: Scalars['ID']['output'];
-  error?: Maybe<Scalars['String']['output']>;
-  executionTime?: Maybe<Scalars['Int']['output']>;
-  nodeId: Scalars['ID']['output'];
-  nodeType: Scalars['String']['output'];
-  output?: Maybe<Scalars['JSON']['output']>;
-  providerId?: Maybe<Scalars['String']['output']>;
-  status: Scalars['String']['output'];
-  timestamp?: Maybe<Scalars['String']['output']>;
-  userId: Scalars['ID']['output'];
-  workflowId: Scalars['ID']['output'];
-  workflowRunId: Scalars['ID']['output'];
-};
-
 export type NodeExecutionEvent = {
   __typename?: 'NodeExecutionEvent';
   duration?: Maybe<Scalars['Int']['output']>;
@@ -493,6 +474,7 @@ export type NodeExecutionEvent = {
   outputs?: Maybe<Scalars['JSON']['output']>;
   state: NodeExecutionState;
   timestamp: Scalars['String']['output'];
+  triggeredSignals?: Maybe<Array<TriggeredSignal>>;
   workflowId: Scalars['ID']['output'];
 };
 
@@ -501,19 +483,6 @@ export enum NodeExecutionState {
   ERROR = 'ERROR',
   STARTED = 'STARTED'
 }
-
-export type NodeExecutionUpdate = {
-  __typename?: 'NodeExecutionUpdate';
-  error?: Maybe<Scalars['String']['output']>;
-  executionTime?: Maybe<Scalars['Int']['output']>;
-  nodeId: Scalars['String']['output'];
-  nodeType: Scalars['String']['output'];
-  output?: Maybe<Scalars['JSON']['output']>;
-  status: Scalars['String']['output'];
-  timestamp: Scalars['String']['output'];
-  workflowId: Scalars['String']['output'];
-  workflowRunId: Scalars['String']['output'];
-};
 
 export type NodeInteraction = {
   __typename?: 'NodeInteraction';
@@ -791,7 +760,6 @@ export type Subscription = {
   __typename?: 'Subscription';
   _empty?: Maybe<Scalars['String']['output']>;
   aiResult: AgentEvent;
-  nodeExecution: NodeExecutionUpdate;
   systemStatus: SystemStatus;
   workflowExecution: NodeExecutionEvent;
 };
@@ -802,13 +770,8 @@ export type SubscriptionAiResultArgs = {
 };
 
 
-export type SubscriptionNodeExecutionArgs = {
-  executionId: Scalars['ID']['input'];
-};
-
-
 export type SubscriptionWorkflowExecutionArgs = {
-  executionId: Scalars['ID']['input'];
+  workflowId: Scalars['ID']['input'];
 };
 
 export type SystemHealth = {
@@ -873,16 +836,24 @@ export type ToolOutput = BaseEvent & {
   userId: Scalars['ID']['output'];
 };
 
+export type TriggeredSignal = {
+  __typename?: 'TriggeredSignal';
+  signal: Scalars['String']['output'];
+  targetNode: Scalars['String']['output'];
+};
+
 export type Workflow = {
   __typename?: 'Workflow';
   active: Scalars['Boolean']['output'];
   createdAt: Scalars['String']['output'];
   description?: Maybe<Scalars['String']['output']>;
   edges: Scalars['JSON']['output'];
+  executionMode?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   isCached: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
   nodes: Scalars['JSON']['output'];
+  testInputs?: Maybe<Scalars['JSON']['output']>;
   updatedAt: Scalars['String']['output'];
 };
 
@@ -891,6 +862,12 @@ export type WorkflowContext = {
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   variables: Scalars['JSON']['output'];
+};
+
+export type WorkflowControlResult = {
+  __typename?: 'WorkflowControlResult';
+  message: Scalars['String']['output'];
+  success: Scalars['Boolean']['output'];
 };
 
 export type WorkflowExecution = {
@@ -905,13 +882,27 @@ export type WorkflowExecution = {
   workflowId: Scalars['ID']['output'];
 };
 
+export type WorkflowExecutionUpdate = {
+  __typename?: 'WorkflowExecutionUpdate';
+  activeNodes: Array<Scalars['String']['output']>;
+  completedNodes: Scalars['JSON']['output'];
+  executionId: Scalars['String']['output'];
+  pendingSignals: Scalars['JSON']['output'];
+  status: Scalars['String']['output'];
+  timestamp: Scalars['String']['output'];
+  workflowId: Scalars['String']['output'];
+  workflowStatus: Scalars['String']['output'];
+};
+
 export type WorkflowInput = {
   active?: InputMaybe<Scalars['Boolean']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
   edges: Scalars['JSON']['input'];
+  executionMode?: InputMaybe<Scalars['String']['input']>;
   id?: InputMaybe<Scalars['ID']['input']>;
   name: Scalars['String']['input'];
   nodes: Scalars['JSON']['input'];
+  testInputs?: InputMaybe<Scalars['JSON']['input']>;
 };
 
 export type WorkflowPerformanceOverview = {

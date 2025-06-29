@@ -19,6 +19,8 @@ export interface UISlice {
   appState: "idle" | "thinking" | "responding" | "waiting" | "complete" | "error";
   isProcessing: boolean;
 
+
+
   // Actions
   toggleSidebar: (forceState?: boolean) => void;
   setComponentConfig: (config: Record<string, React.ComponentType<any>>) => void;
@@ -32,6 +34,8 @@ export interface UISlice {
   updateAppState: (appState: UISlice["appState"]) => void;
   setProcessing: (isProcessing: boolean) => void;
   resetWorkflow: () => void;
+
+
 }
 
 // Initial state
@@ -45,6 +49,16 @@ const initialUIState: UIState = {
   workflowRunId: null,
   appState: "idle",
   isProcessing: false,
+
+  // Workflow execution state
+  workflowExecution: {
+    executionId: null,
+    status: null,
+    completedNodes: {},
+    pendingSignals: {},
+    activeNodes: [],
+    timestamp: null,
+  },
 };
 
 // Create UI slice
@@ -106,4 +120,6 @@ export const createUISlice = (set: any, get: any, api: any): UISlice => ({
       isProcessing: false,
     }));
   },
+
+
 });

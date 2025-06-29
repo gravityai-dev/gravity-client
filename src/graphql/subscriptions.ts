@@ -2,7 +2,7 @@
  * GraphQL subscriptions for Gravity AI
  */
 
-import { gql } from '@apollo/client';
+import { gql } from "@apollo/client";
 
 export const AI_RESULT_SUBSCRIPTION = gql`
   subscription AiResult($conversationId: ID!) {
@@ -126,25 +126,6 @@ export const AI_RESULT_SUBSCRIPTION = gql`
         userId
         providerId
         timestamp
-        component {
-          type
-          props
-        }
-      }
-      ... on NodeExecution {
-        chatId
-        conversationId
-        userId
-        providerId
-        timestamp
-        workflowId
-        workflowRunId
-        nodeId
-        nodeType
-        status
-        output
-        error
-        executionTime
         component {
           type
           props

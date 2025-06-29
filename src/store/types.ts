@@ -17,6 +17,7 @@ export interface ConnectionState {
   subscriptions: Map<string, any>;
   lastConnected: Date | null;
   conversationId: string | null;
+  workflowId: string | null;
 }
 
 // Active response state
@@ -59,4 +60,14 @@ export interface UIState {
   // Universal app-level execution state
   appState: "idle" | "thinking" | "responding" | "waiting" | "complete" | "error";
   isProcessing: boolean;
+
+  // Workflow execution state
+  workflowExecution: {
+    executionId: string | null;
+    status: string | null;
+    completedNodes: Record<string, any>;
+    pendingSignals: Record<string, string[]>;
+    activeNodes: string[];
+    timestamp: string | null;
+  };
 }

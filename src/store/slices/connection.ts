@@ -10,12 +10,61 @@ import { ConnectionState } from "../types";
 import { ConnectionConfig } from "../../types/config";
 import { AI_RESULT_SUBSCRIPTION } from "../../graphql/subscriptions";
 
+// Helper function to create subscriptions with consistent error handling
+function createSubscription(client: any, query: any, variables: any, handlers: {
+  onData: (result: any) => void;
+  onError?: (error: any) => void;
+  subscriptionName?: string;
+}) {
+  const { onData, onError, subscriptionName = "subscription" } = handlers;
+  
+  const subscription = client.subscribe({ query, variables });
+  
+  return subscription.subscribe({
+    next: (result: any) => {
+      if (result.errors) {
+        console.error(`❌ [${subscriptionName}] Subscription errors:`, result.errors);
+        result.errors.forEach((error: any, index: number) => {
+          console.error(`  Error ${index + 1}:`, {
+            message: error.message,
+            path: error.path,
+            extensions: error.extensions,
+          });
+        });
+      }
+      
+      onData(result);
+    },
+    error: (error: any) => {
+      console.error(`❌ [${subscriptionName}] Subscription error:`, error);
+      console.error("  Error details:", {
+        message: error.message,
+        networkError: error.networkError,
+        graphQLErrors: error.graphQLErrors,
+      });
+
+      if (error.graphQLErrors && Array.isArray(error.graphQLErrors)) {
+        error.graphQLErrors.forEach((gqlError: any, index: number) => {
+          console.error(`  GraphQL Error ${index + 1}:`, {
+            message: gqlError.message,
+            path: gqlError.path,
+            extensions: gqlError.extensions,
+          });
+        });
+      }
+      
+      if (onError) onError(error);
+    },
+  });
+}
+
 // Connection slice interface - flattened for easy access
 export interface ConnectionSlice extends ConnectionState {
   connect: (config: ConnectionConfig) => Promise<void>;
   disconnect: () => void;
   cleanupSubscription: () => void;
   updateSubscription: (conversationId: string) => void;
+
 }
 
 // Initial state
@@ -28,6 +77,7 @@ const initialConnectionState: ConnectionState = {
   subscriptions: new Map(),
   lastConnected: null,
   conversationId: null,
+  workflowId: null,
 };
 
 // Create connection slice
@@ -105,7 +155,7 @@ export const createConnectionSlice = (set: any, get: any, api: any): ConnectionS
         lastConnected: new Date(),
       }));
 
-      // Set up ONE subscription for the session
+      // Set up subscriptions for the session
       // Get conversationId from cookie or generate new one
       let conversationId = localStorage.getItem("gravity-conversationId");
       if (!conversationId) {
@@ -114,28 +164,9 @@ export const createConnectionSlice = (set: any, get: any, api: any): ConnectionS
       }
 
       try {
-        const subscription = client.subscribe({
-          query: AI_RESULT_SUBSCRIPTION,
-          variables: { conversationId },
-        });
-
-        //console.log("🔌 Setting up subscription with conversationId:", conversationId);
-
-        const observableSubscription = subscription.subscribe({
-          next: (result: any) => {
-            //console.log("📨 Raw subscription result:", result);
-
-            if (result.errors) {
-              console.error("❌ Subscription errors:", result.errors);
-              result.errors.forEach((error: any, index: number) => {
-                console.error(`  Error ${index + 1}:`, {
-                  message: error.message,
-                  path: error.path,
-                  extensions: error.extensions,
-                });
-              });
-            }
-
+        // Set up message subscription
+        const messageSubscription = createSubscription(client, AI_RESULT_SUBSCRIPTION, { conversationId }, {
+          onData: (result: any) => {
             if (result.data?.aiResult) {
               // console.log("📨 SUBSCRIPTION data:", {
               //   type: result.data.aiResult.__typename,
@@ -157,31 +188,12 @@ export const createConnectionSlice = (set: any, get: any, api: any): ConnectionS
               }
             }
           },
-          error: (error: any) => {
-            console.error("❌ Subscription error:", error);
-            console.error("  Error details:", {
-              message: error.message,
-              networkError: error.networkError,
-              graphQLErrors: error.graphQLErrors,
-              stack: error.stack,
-            });
-
-            // If it's a GraphQL error, log each one
-            if (error.graphQLErrors && Array.isArray(error.graphQLErrors)) {
-              error.graphQLErrors.forEach((gqlError: any, index: number) => {
-                console.error(`  GraphQL Error ${index + 1}:`, {
-                  message: gqlError.message,
-                  path: gqlError.path,
-                  extensions: gqlError.extensions,
-                });
-              });
-            }
-          },
+          subscriptionName: "message",
         });
 
-        // Store the subscription and conversationId
+        // Store the message subscription and conversationId
         const subscriptions = get().subscriptions;
-        subscriptions.set("session", observableSubscription);
+        subscriptions.set("session", messageSubscription);
 
         // Set this as the default conversationId for the session
         set((state: any) => ({
@@ -257,26 +269,8 @@ export const createConnectionSlice = (set: any, get: any, api: any): ConnectionS
     // Set up new subscription with new conversationId
     try {
       console.log("[GravityClient] Creating new subscription with conversationId:", conversationId);
-      const subscription = client.subscribe({
-        query: AI_RESULT_SUBSCRIPTION,
-        variables: { conversationId },
-      });
-
-      const observableSubscription = subscription.subscribe({
-        next: (result: any) => {
-          //console.log("📨 Raw subscription result:", result);
-
-          if (result.errors) {
-            console.error("❌ Subscription errors:", result.errors);
-            result.errors.forEach((error: any, index: number) => {
-              console.error(`  Error ${index + 1}:`, {
-                message: error.message,
-                path: error.path,
-                extensions: error.extensions,
-              });
-            });
-          }
-
+      const subscription = createSubscription(client, AI_RESULT_SUBSCRIPTION, { conversationId }, {
+        onData: (result: any) => {
           if (result.data?.aiResult) {
             // console.log("📨 SUBSCRIPTION data:", {
             //   type: result.data.aiResult.__typename,
@@ -298,30 +292,11 @@ export const createConnectionSlice = (set: any, get: any, api: any): ConnectionS
             }
           }
         },
-        error: (error: any) => {
-          console.error("❌ Subscription error:", error);
-          console.error("  Error details:", {
-            message: error.message,
-            networkError: error.networkError,
-            graphQLErrors: error.graphQLErrors,
-            stack: error.stack,
-          });
-
-          // If it's a GraphQL error, log each one
-          if (error.graphQLErrors && Array.isArray(error.graphQLErrors)) {
-            error.graphQLErrors.forEach((gqlError: any, index: number) => {
-              console.error(`  GraphQL Error ${index + 1}:`, {
-                message: gqlError.message,
-                path: gqlError.path,
-                extensions: gqlError.extensions,
-              });
-            });
-          }
-        },
+        subscriptionName: "message",
       });
 
       // Store the new subscription and conversationId
-      subscriptions.set(`session:${conversationId}`, observableSubscription);
+      subscriptions.set(`session:${conversationId}`, subscription);
 
       // Update localStorage and state
       localStorage.setItem("gravity-conversationId", conversationId);
@@ -335,4 +310,6 @@ export const createConnectionSlice = (set: any, get: any, api: any): ConnectionS
       console.error("[GravityClient] ❌ Failed to update subscription:", error);
     }
   },
+
+
 });
