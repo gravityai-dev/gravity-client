@@ -1,6 +1,6 @@
 {
   "name": "@gravityai-dev/gravity-client",
-  "version": "0.2.73",
+  "version": "0.2.76",
   "description": "Clean, organized client library for Gravity AI with real-time streaming and 3-tier JSON architecture",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -29,7 +29,7 @@
   "author": "Gravity AI <dev@gravityai.com>",
   "license": "MIT",
   "publishConfig": {
-    "access": "restricted"
+    "access": "public"
   },
   "dependencies": {
     "@apollo/client": "^3.8.0",
