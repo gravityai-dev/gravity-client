@@ -29,8 +29,8 @@ export interface BaseMessage {
 export interface SendMessageParams {
   message: string;
   userId: string;
-  conversationId?: string;
-  chatId?: string;
+  conversationId: string;
+  chatId: string;
   providerId?: string;
   timestamp?: string;
   metadata?: {

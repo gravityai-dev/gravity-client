@@ -1,6 +1,6 @@
 {
   "name": "@gravityai-dev/gravity-client",
-  "version": "0.2.67",
+  "version": "0.2.68",
   "description": "Clean, organized client library for Gravity AI with real-time streaming and 3-tier JSON architecture",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -33,7 +33,7 @@
   },
   "dependencies": {
     "@apollo/client": "^3.8.0",
-    "@graphql-yoga/apollo-link": "^4.0.0",
+    "@graphql-yoga/apollo-link": "^3.0.1",
     "graphql": "^16.8.0",
     "react": "^18.2.0",
     "zustand": "^4.4.0"

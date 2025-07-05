@@ -12,4 +12,5 @@ export interface GravityConfig {
 export interface ConnectionConfig extends GravityConfig {
   reconnectAttempts?: number;
   reconnectInterval?: number;
+  conversationId?: string; // Optional: client can provide their own conversation ID
 }

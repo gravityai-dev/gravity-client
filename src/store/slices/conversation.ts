@@ -9,7 +9,6 @@ import { TALK_TO_AGENT } from "../../graphql/operations";
 
 // Conversation slice interface - flattened for easy access
 export interface ConversationSlice extends ConversationState {
-  setConversationId: (id: string) => void;
   addMessage: (message: GravityMessage) => void;
   clearConversation: () => void;
   sendMessage: (params: SendMessageParams) => Promise<void>;
@@ -17,35 +16,14 @@ export interface ConversationSlice extends ConversationState {
 
 // Initial state
 const initialConversationState: ConversationState = {
-  conversationId: null,
   messages: [],
   isLoading: false,
 };
 
-// Helper functions
-const generateConversationId = (): string => {
-  const timestamp = Date.now();
-  const randomStr = Math.random().toString(36).substring(2, 7);
-  return `conv_${timestamp}_${randomStr}`;
-};
-
-const generateChatId = (): string => {
-  const timestamp = Date.now();
-  const randomStr = Math.random().toString(36).substring(2, 7);
-  return `chat_${timestamp}_${randomStr}`;
-};
-
 // Create conversation slice
 export const createConversationSlice = (set: any, get: any, api: any): ConversationSlice => ({
-  conversationId: initialConversationState.conversationId,
   messages: initialConversationState.messages,
   isLoading: initialConversationState.isLoading,
-
-  setConversationId: (id: string) => {
-    set((state: any) => ({
-      conversationId: id,
-    }));
-  },
 
   addMessage: (message: GravityMessage) => {
     set((state: any) => ({
@@ -55,7 +33,6 @@ export const createConversationSlice = (set: any, get: any, api: any): Conversat
 
   clearConversation: () => {
     set((state: any) => ({
-      conversationId: initialConversationState.conversationId,
       messages: initialConversationState.messages,
       isLoading: initialConversationState.isLoading,
     }));
@@ -73,28 +50,40 @@ export const createConversationSlice = (set: any, get: any, api: any): Conversat
     get().clearActiveResponse();
 
     try {
-      // Get conversationId directly from localStorage (same source as connection slice)
-      // This ensures we use the EXACT same conversationId that the subscription is listening to
+      // Get conversationId from params or UI state (single source of truth)
       let conversationId = params.conversationId || state.conversationId;
       if (!conversationId) {
-        conversationId = localStorage.getItem("gravity-conversationId");
-        if (!conversationId) {
-          conversationId = `conv_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-          localStorage.setItem("gravity-conversationId", conversationId);
+        console.error(`[GravityClient] No conversationId available - must be set in UI state`);
+        throw new Error("No conversationId available - ensure conversationId is set in UI state");
+      }
+
+      // Check if conversationId has changed
+      const currentConversationId = state.conversationId;
+      
+      if (conversationId !== currentConversationId) {
+        // Update UI state with new conversation ID
+        const setConversationId = get().setConversationId;
+        if (setConversationId) {
+          setConversationId(conversationId);
+        }
+        
+        // Update subscription to new conversationId
+        const updateSubscription = get().updateSubscription;
+        if (updateSubscription) {
+          updateSubscription();
         }
       }
 
-      // Store conversationId in conversation slice state for future reference
-      if (!state.conversationId && conversationId) {
-        get().setConversationId(conversationId);
+      const chatId = params.chatId;
+      if (!chatId) {
+        console.error(`[GravityClient] No chatId provided`);
+        throw new Error("chatId is required for sending messages");
       }
-
-      const chatId = params.chatId || generateChatId();
 
       // Start active response to set up the state
       const startActiveResponse = get().startActiveResponse;
       if (startActiveResponse) {
-        startActiveResponse(conversationId, chatId, params.userId);
+        startActiveResponse(chatId, params.userId);
       }
 
       const mutationInput = {

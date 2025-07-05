@@ -28,7 +28,7 @@ export type ActionSuggestion = BaseEvent & {
   userId: Scalars['ID']['output'];
 };
 
-export type AgentEvent = ActionSuggestion | AudioChunk | Cards | ImageResponse | JsonData | MessageChunk | Metadata | ProgressUpdate | State | Text | ToolOutput;
+export type AgentEvent = ActionSuggestion | AudioChunk | Cards | JsonData | MessageChunk | NodeExecutionEvent | ProgressUpdate | Questions | State | Text;
 
 export type AgentInput = {
   chatId: Scalars['ID']['input'];
@@ -199,6 +199,8 @@ export type DebugNodeInput = {
   clearState?: InputMaybe<Scalars['Boolean']['input']>;
   config?: InputMaybe<Scalars['JSON']['input']>;
   context?: InputMaybe<Scalars['JSON']['input']>;
+  conversationId?: InputMaybe<Scalars['String']['input']>;
+  executionId?: InputMaybe<Scalars['ID']['input']>;
   mode?: InputMaybe<DebugMode>;
   nodeId?: InputMaybe<Scalars['String']['input']>;
   nodeInputs?: InputMaybe<Scalars['JSON']['input']>;
@@ -351,6 +353,7 @@ export type MessageChunk = BaseEvent & {
   chatId: Scalars['ID']['output'];
   component?: Maybe<ComponentSpec>;
   conversationId: Scalars['ID']['output'];
+  index?: Maybe<Scalars['Int']['output']>;
   providerId?: Maybe<Scalars['String']['output']>;
   text: Scalars['String']['output'];
   timestamp?: Maybe<Scalars['String']['output']>;
@@ -464,17 +467,21 @@ export type NodeCredential = {
   required: Scalars['Boolean']['output'];
 };
 
-export type NodeExecutionEvent = {
+export type NodeExecutionEvent = BaseEvent & {
   __typename?: 'NodeExecutionEvent';
+  chatId: Scalars['ID']['output'];
+  conversationId: Scalars['ID']['output'];
   duration?: Maybe<Scalars['Int']['output']>;
   error?: Maybe<Scalars['String']['output']>;
   executionId: Scalars['ID']['output'];
   nodeId: Scalars['ID']['output'];
   nodeType: Scalars['String']['output'];
   outputs?: Maybe<Scalars['JSON']['output']>;
+  providerId?: Maybe<Scalars['String']['output']>;
   state: NodeExecutionState;
-  timestamp: Scalars['String']['output'];
+  timestamp?: Maybe<Scalars['String']['output']>;
   triggeredSignals?: Maybe<Array<TriggeredSignal>>;
+  userId: Scalars['ID']['output'];
   workflowId: Scalars['ID']['output'];
 };
 
@@ -497,7 +504,6 @@ export type NodeInteractionInput = {
   interactionId: Scalars['String']['input'];
   nodeId: Scalars['String']['input'];
   params?: InputMaybe<Scalars['JSON']['input']>;
-  workflowId: Scalars['ID']['input'];
 };
 
 export type NodeInteractionResult = {
@@ -565,7 +571,7 @@ export type NodeType = {
   logoUrl?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   outputs: Array<NodePort>;
-  services?: Maybe<Scalars['JSON']['output']>;
+  serviceConnectors?: Maybe<Scalars['JSON']['output']>;
   testData?: Maybe<Scalars['JSON']['output']>;
 };
 
@@ -678,6 +684,16 @@ export type QueryWorkflowPerformanceOverviewArgs = {
   workflowId: Scalars['ID']['input'];
 };
 
+export type Questions = BaseEvent & {
+  __typename?: 'Questions';
+  chatId: Scalars['ID']['output'];
+  component?: Maybe<ComponentSpec>;
+  conversationId: Scalars['ID']['output'];
+  providerId?: Maybe<Scalars['String']['output']>;
+  timestamp?: Maybe<Scalars['String']['output']>;
+  userId: Scalars['ID']['output'];
+};
+
 export type QueueMetrics = {
   __typename?: 'QueueMetrics';
   active: Scalars['Int']['output'];
@@ -761,17 +777,11 @@ export type Subscription = {
   _empty?: Maybe<Scalars['String']['output']>;
   aiResult: AgentEvent;
   systemStatus: SystemStatus;
-  workflowExecution: NodeExecutionEvent;
 };
 
 
 export type SubscriptionAiResultArgs = {
   conversationId: Scalars['ID']['input'];
-};
-
-
-export type SubscriptionWorkflowExecutionArgs = {
-  workflowId: Scalars['ID']['input'];
 };
 
 export type SystemHealth = {
@@ -925,9 +935,26 @@ export type TalkToAgentMutationVariables = Exact<{
 
 export type TalkToAgentMutation = { __typename?: 'Mutation', talkToAgent: { __typename?: 'AgentResponse', chatId: string, conversationId: string, userId: string, executionId?: string | null, providerId?: string | null, success: boolean, message?: string | null } };
 
+export type DebugNodeMutationVariables = Exact<{
+  workflowId: Scalars['ID']['input'];
+  nodeId: Scalars['String']['input'];
+  executionId: Scalars['ID']['input'];
+  conversationId: Scalars['String']['input'];
+}>;
+
+
+export type DebugNodeMutation = { __typename?: 'Mutation', debugNode: { __typename?: 'DebugNodeResult', success: boolean, error?: string | null, executionId?: string | null } };
+
 export type GetChatStatusQueryVariables = Exact<{
   chatId: Scalars['ID']['input'];
 }>;
 
 
 export type GetChatStatusQuery = { __typename?: 'Query', getChatStatus: { __typename?: 'ChatStatus', exists: boolean, status?: string | null, startTime?: string | null, message?: string | null, error?: string | null } };
+
+export type InvokeNodeInteractionMutationVariables = Exact<{
+  input: NodeInteractionInput;
+}>;
+
+
+export type InvokeNodeInteractionMutation = { __typename?: 'Mutation', invokeNodeInteraction: { __typename?: 'NodeInteractionResult', success: boolean, data?: any | null, error?: string | null, jobId?: string | null, progress?: number | null } };

@@ -16,13 +16,11 @@ export interface ConnectionState {
   config: ConnectionConfig | null;
   subscriptions: Map<string, any>;
   lastConnected: Date | null;
-  conversationId: string | null;
   workflowId: string | null;
 }
 
 // Active response state
 export interface ActiveResponseState {
-  conversationId: string | null;
   chatId: string | null;
   userId: string | null;
   messageSource: "user" | "agent" | null;
@@ -34,6 +32,8 @@ export interface ActiveResponseState {
   actionSuggestion: any | null; // Latest action suggestions
   text: any | null; // Latest text message
   cards: any | null; // Card components from server
+  questions: any | null; // Follow-up questions from server
+  nodeExecutionEvent: any | null; // Workflow node execution events
 
   // Timing
   startTime: number | null;
@@ -42,7 +42,6 @@ export interface ActiveResponseState {
 
 // Conversation state
 export interface ConversationState {
-  conversationId: string | null;
   messages: GravityMessage[];
   isLoading: boolean;
 }
@@ -56,18 +55,9 @@ export interface UIState {
   // App-level workflow state
   workflowId: string | null;
   workflowRunId: string | null;
+  conversationId: string | null;  // Single source of truth for conversation ID
 
   // Universal app-level execution state
   appState: "idle" | "thinking" | "responding" | "waiting" | "complete" | "error";
   isProcessing: boolean;
-
-  // Workflow execution state
-  workflowExecution: {
-    executionId: string | null;
-    status: string | null;
-    completedNodes: Record<string, any>;
-    pendingSignals: Record<string, string[]>;
-    activeNodes: string[];
-    timestamp: string | null;
-  };
 }

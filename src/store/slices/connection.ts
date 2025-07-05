@@ -11,15 +11,24 @@ import { ConnectionConfig } from "../../types/config";
 import { AI_RESULT_SUBSCRIPTION } from "../../graphql/subscriptions";
 
 // Helper function to create subscriptions with consistent error handling
-function createSubscription(client: any, query: any, variables: any, handlers: {
-  onData: (result: any) => void;
-  onError?: (error: any) => void;
-  subscriptionName?: string;
-}) {
+function createSubscription(
+  client: any,
+  query: any,
+  variables: any,
+  handlers: {
+    onData: (result: any) => void;
+    onError?: (error: any) => void;
+    subscriptionName?: string;
+  }
+) {
   const { onData, onError, subscriptionName = "subscription" } = handlers;
-  
-  const subscription = client.subscribe({ query, variables });
-  
+
+  const subscription = client.subscribe({
+    query,
+    variables,
+    errorPolicy: "ignore", // Don't stop subscription on network/GraphQL errors
+  });
+
   return subscription.subscribe({
     next: (result: any) => {
       if (result.errors) {
@@ -32,28 +41,36 @@ function createSubscription(client: any, query: any, variables: any, handlers: {
           });
         });
       }
-      
+
       onData(result);
     },
     error: (error: any) => {
-      console.error(`❌ [${subscriptionName}] Subscription error:`, error);
-      console.error("  Error details:", {
-        message: error.message,
-        networkError: error.networkError,
-        graphQLErrors: error.graphQLErrors,
+      // Check if this is a network error that should trigger reconnection
+      const isNetworkError =
+        error?.message?.includes("INCOMPLETE_CHUNKED_ENCODING") ||
+        error?.message?.includes("net::") ||
+        error?.networkError;
+
+      if (isNetworkError) {
+        console.warn(`🔄 [${subscriptionName}] Network error detected, will auto-reconnect:`, {
+          message: error?.message,
+          networkError: error?.networkError?.message,
+        });
+
+        // Don't call onError for network issues - let subscription auto-reconnect
+        return;
+      }
+
+      // For non-network errors, log as warning but don't terminate
+      console.warn(`⚠️ [${subscriptionName}] Subscription error (non-fatal):`, {
+        message: error?.message,
+        graphQLErrors: error?.graphQLErrors?.length || 0,
       });
 
-      if (error.graphQLErrors && Array.isArray(error.graphQLErrors)) {
-        error.graphQLErrors.forEach((gqlError: any, index: number) => {
-          console.error(`  GraphQL Error ${index + 1}:`, {
-            message: gqlError.message,
-            path: gqlError.path,
-            extensions: gqlError.extensions,
-          });
-        });
+      // Only call onError for truly critical errors
+      if (onError && !isNetworkError) {
+        onError(error);
       }
-      
-      if (onError) onError(error);
     },
   });
 }
@@ -63,12 +80,14 @@ export interface ConnectionSlice extends ConnectionState {
   connect: (config: ConnectionConfig) => Promise<void>;
   disconnect: () => void;
   cleanupSubscription: () => void;
-  updateSubscription: (conversationId: string) => void;
-
+  updateSubscription: () => void;
 }
 
+// Track last subscription update to prevent rapid successive calls
+let lastSubscriptionUpdate: { conversationId: string; timestamp: number } | null = null;
+
 // Initial state
-const initialConnectionState: ConnectionState = {
+const initialState: ConnectionState = {
   client: null,
   isConnected: false,
   isConnecting: false,
@@ -76,13 +95,12 @@ const initialConnectionState: ConnectionState = {
   config: null,
   subscriptions: new Map(),
   lastConnected: null,
-  conversationId: null,
   workflowId: null,
 };
 
 // Create connection slice
 export const createConnectionSlice = (set: any, get: any, api: any): ConnectionSlice => ({
-  ...initialConnectionState,
+  ...initialState,
 
   connect: async (config: ConnectionConfig) => {
     set((state: any) => ({
@@ -103,7 +121,7 @@ export const createConnectionSlice = (set: any, get: any, api: any): ConnectionS
       });
 
       // Create SSE link for subscriptions using YogaLink
-      // IMPORTANT: We use SSE (YogaLink) and NOT WebSockets for subscription support
+      // IMPORTANT: We use SSE (YogaLink) and NOT WebSockets for subscription support????   testing on WS
       const sseLink = new YogaLink({
         endpoint: config.endpoint, // Use the same HTTP endpoint - not a WebSocket URL
         headers: {
@@ -155,54 +173,26 @@ export const createConnectionSlice = (set: any, get: any, api: any): ConnectionS
         lastConnected: new Date(),
       }));
 
-      // Set up subscriptions for the session
-      // Get conversationId from cookie or generate new one
-      let conversationId = localStorage.getItem("gravity-conversationId");
-      if (!conversationId) {
-        conversationId = `conv_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-        localStorage.setItem("gravity-conversationId", conversationId);
-      }
+      // Don't set up subscriptions here - wait for client to provide conversationId
+      console.log(`[GravityClient] Connected successfully. Waiting for conversationId from client.`);
 
-      try {
-        // Set up message subscription
-        const messageSubscription = createSubscription(client, AI_RESULT_SUBSCRIPTION, { conversationId }, {
-          onData: (result: any) => {
-            if (result.data?.aiResult) {
-              // console.log("📨 SUBSCRIPTION data:", {
-              //   type: result.data.aiResult.__typename,
-              //   data: result.data.aiResult,
-              // });
-              // if (result.data.aiResult.__typename === "NodeExecution") {
-              //   console.log("📝 NodeExecution event:", {
-              //     nodeId: result.data.aiResult.nodeId,
-              //     nodeType: result.data.aiResult.nodeType,
-              //     status: result.data.aiResult.status,
-              //     output: result.data.aiResult.output,
-              //     error: result.data.aiResult.error,
-              //     workflowId: result.data.aiResult.workflowId,
-              //   });
-              // }
-              const processMessage = get().processMessage;
-              if (processMessage) {
-                processMessage(result.data.aiResult);
-              }
+      // Clean up any existing subscriptions before creating new ones
+      const existingSubscriptions = get().subscriptions;
+      if (existingSubscriptions && existingSubscriptions.size > 0) {
+        console.log(`[GravityClient] Cleaning up ${existingSubscriptions.size} existing subscriptions`);
+        existingSubscriptions.forEach((sub: any, key: string) => {
+          if (sub && typeof sub.unsubscribe === "function") {
+            try {
+              sub.unsubscribe();
+            } catch (error) {
+              console.error(`[GravityClient] Error unsubscribing ${key}:`, error);
             }
-          },
-          subscriptionName: "message",
+          }
         });
-
-        // Store the message subscription and conversationId
-        const subscriptions = get().subscriptions;
-        subscriptions.set("session", messageSubscription);
-
-        // Set this as the default conversationId for the session
-        set((state: any) => ({
-          ...state,
-          conversationId: conversationId,
-        }));
-      } catch (error) {
-        console.error("[GravityClient] ❌ Failed to setup subscription:", error);
+        existingSubscriptions.clear();
       }
+
+      // Subscription will be set up when client provides conversationId via sendMessage
     } catch (error) {
       console.error("Failed to connect to Gravity AI:", error);
       set((state: any) => ({
@@ -218,98 +208,155 @@ export const createConnectionSlice = (set: any, get: any, api: any): ConnectionS
     const state = get();
     const { client, subscriptions } = state;
 
+    console.log(`🧹 [ConnectionSlice] Disconnecting - cleaning up ${subscriptions.size} subscriptions`);
+
     // Cleanup subscriptions
-    subscriptions.forEach((sub: any) => {
+    subscriptions.forEach((sub: any, key: string) => {
+      console.log(`🧹 [ConnectionSlice] Unsubscribing from: ${key}`);
       if (sub && typeof sub.unsubscribe === "function") {
-        sub.unsubscribe();
+        try {
+          sub.unsubscribe();
+        } catch (error) {
+          console.error(`❌ [ConnectionSlice] Error unsubscribing from ${key}:`, error);
+        }
       }
     });
+    subscriptions.clear();
 
     // Stop Apollo client
     if (client) {
-      client.stop();
+      try {
+        client.stop();
+      } catch (error) {
+        console.error("❌ [ConnectionSlice] Error stopping Apollo client:", error);
+      }
     }
 
     set((state: any) => ({
-      ...initialConnectionState,
+      ...initialState,
       config: state.config, // Keep config for reconnection
     }));
   },
 
   cleanupSubscription: () => {
     const state = get();
-    state.subscriptions.clear();
+    const { subscriptions } = state;
+
+    console.log(`🧹 [ConnectionSlice] Cleaning up ${subscriptions.size} subscriptions`);
+
+    subscriptions.forEach((sub: any, key: string) => {
+      console.log(`🧹 [ConnectionSlice] Cleaning up subscription: ${key}`);
+      if (sub && typeof sub.unsubscribe === "function") {
+        try {
+          sub.unsubscribe();
+        } catch (error) {
+          console.error(`❌ [ConnectionSlice] Error cleaning up subscription ${key}:`, error);
+        }
+      }
+    });
+    subscriptions.clear();
   },
 
-  updateSubscription: (conversationId: string) => {
+  updateSubscription: () => {
     const state = get();
-    const { client, subscriptions } = state;
+    const { client, subscriptions, conversationId } = state;
+    
+    if (!conversationId) {
+      console.warn("[GravityClient] Cannot update subscription - no conversationId set in UI state");
+      return;
+    }
 
     if (!client) {
       console.warn("[GravityClient] Cannot update subscription - no client connected");
       return;
     }
 
-    // Check if we already have a subscription for this conversationId
-    const existingSubscription = subscriptions.get(`session:${conversationId}`);
-    if (existingSubscription) {
-      // Already subscribed to this conversationId, no need to recreate
-      return;
+    // Check if we already have a subscription for this conversation ID
+    const subscriptionKey = `session:${conversationId}`;
+    const existingSubscription = subscriptions.get(subscriptionKey);
+
+    // Simple logging
+    if (existingSubscription && !existingSubscription.closed) {
+      console.log(`[GravityClient] ✅ Already subscribed to ${conversationId}`);
     }
 
-    // Cleanup existing subscriptions (different conversationIds)
-    subscriptions.forEach((sub: any, key: string) => {
-      console.log("[GravityClient] Cleaning up existing subscription:", key);
-      if (sub && typeof sub.unsubscribe === "function") {
-        sub.unsubscribe();
-      }
-    });
-    subscriptions.clear();
+    // If we have an active subscription for this exact conversation ID, do NOT recreate
+    if (existingSubscription && !existingSubscription.closed) {
+      return;
+    }
+    
+    // Additional safeguard: Check if we just updated this same conversation ID (within 100ms)
+    const now = Date.now();
+    if (lastSubscriptionUpdate && 
+        lastSubscriptionUpdate.conversationId === conversationId && 
+        (now - lastSubscriptionUpdate.timestamp) < 100) {
+      return;
+    }
+    
+
+
+    // Clean up any other subscriptions (different conversation IDs)
+    if (subscriptions.size > 0) {
+      console.log("[GravityClient] 🔄 Cleaning up", subscriptions.size, "existing subscription(s)");
+      subscriptions.forEach((sub: any, key: string) => {
+
+        if (sub && typeof sub.unsubscribe === "function") {
+          try {
+            sub.unsubscribe();
+          } catch (error) {
+            console.error(`❌ [GravityClient] Error unsubscribing from ${key}:`, error);
+          }
+        }
+      });
+      subscriptions.clear();
+    }
 
     // Set up new subscription with new conversationId
     try {
-      console.log("[GravityClient] Creating new subscription with conversationId:", conversationId);
-      const subscription = createSubscription(client, AI_RESULT_SUBSCRIPTION, { conversationId }, {
-        onData: (result: any) => {
-          if (result.data?.aiResult) {
-            // console.log("📨 SUBSCRIPTION data:", {
-            //   type: result.data.aiResult.__typename,
-            //   data: result.data.aiResult,
-            // });
-            // if (result.data.aiResult.__typename === "NodeExecution") {
-            //   console.log("📝 NodeExecution event:", {
-            //     nodeId: result.data.aiResult.nodeId,
-            //     nodeType: result.data.aiResult.nodeType,
-            //     status: result.data.aiResult.status,
-            //     output: result.data.aiResult.output,
-            //     error: result.data.aiResult.error,
-            //     workflowId: result.data.aiResult.workflowId,
-            //   });
-            // }
-            const processMessage = get().processMessage;
-            if (processMessage) {
-              processMessage(result.data.aiResult);
-            }
-          }
+      console.log(`[GravityClient] 🔄 Subscribing to ${conversationId}`);
+      
+      // Record this subscription update
+      lastSubscriptionUpdate = { conversationId, timestamp: Date.now() };
+      const messageSubscription = createSubscription(
+        client,
+        AI_RESULT_SUBSCRIPTION,
+        {
+          conversationId,
         },
-        subscriptionName: "message",
-      });
+        {
+          onData: (result: any) => {
+            if (result?.data?.aiResult) {
+              // console.log("[GravityClient] Received AI result message:", {
+              //   type: result.data.aiResult.__typename,
+              //   conversationId: result.data.aiResult.conversationId,
+              //   workflowId: result.data.aiResult.workflowId,
+              //   ...(result.data.aiResult.__typename === "MessageChunk" && {
+              //     index: result.data.aiResult.index,
+              //     content: result.data.aiResult.content?.substring(0, 50) + "...",
+              //   }),
+              // });
+              // })
+              const processMessage = get().processMessage;
+              if (processMessage) {
+                // Log MessageChunk receipts for debugging
+                if (result.data.aiResult.__typename === "MessageChunk") {
+                  // console.log(`📨 [Subscription] Received MessageChunk #${result.data.aiResult.index}`);
+                }
+                
+                processMessage(result.data.aiResult);
+              }
+            }
+          },
+          subscriptionName: "message",
+        }
+      );
 
-      // Store the new subscription and conversationId
-      subscriptions.set(`session:${conversationId}`, subscription);
+      // Store subscription with conversation ID as key
+      subscriptions.set(subscriptionKey, messageSubscription);
 
-      // Update localStorage and state
-      localStorage.setItem("gravity-conversationId", conversationId);
 
-      // Set this as the default conversationId for the session
-      set((state: any) => ({
-        ...state,
-        conversationId: conversationId,
-      }));
     } catch (error) {
       console.error("[GravityClient] ❌ Failed to update subscription:", error);
     }
   },
-
-
 });

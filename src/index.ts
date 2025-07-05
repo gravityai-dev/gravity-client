@@ -26,7 +26,7 @@ export const setActiveObject = (objectId?: string) => {
 };
 
 // GraphQL
-export { TALK_TO_AGENT, GET_CHAT_STATUS } from "./graphql/operations";
+export { TALK_TO_AGENT, STEP_WORKFLOW, GET_CHAT_STATUS, INVOKE_NODE_INTERACTION } from "./graphql/operations";
 export { AI_RESULT_SUBSCRIPTION } from "./graphql/subscriptions";
 // Note: GraphQL types exported separately to avoid conflicts
 

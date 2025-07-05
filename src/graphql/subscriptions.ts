@@ -15,6 +15,7 @@ export const AI_RESULT_SUBSCRIPTION = gql`
         providerId
         timestamp
         text
+        index
         component {
           type
           props
@@ -68,39 +69,12 @@ export const AI_RESULT_SUBSCRIPTION = gql`
           props
         }
       }
-      ... on Metadata {
+      ... on Questions {
         chatId
         conversationId
         userId
         providerId
         timestamp
-        message
-        component {
-          type
-          props
-        }
-      }
-      ... on ImageResponse {
-        chatId
-        conversationId
-        userId
-        providerId
-        timestamp
-        url
-        alt
-        component {
-          type
-          props
-        }
-      }
-      ... on ToolOutput {
-        chatId
-        conversationId
-        userId
-        providerId
-        timestamp
-        tool
-        result
         component {
           type
           props
@@ -129,6 +103,25 @@ export const AI_RESULT_SUBSCRIPTION = gql`
         component {
           type
           props
+        }
+      }
+      ... on NodeExecutionEvent {
+        chatId
+        conversationId
+        userId
+        providerId
+        timestamp
+        executionId
+        workflowId
+        nodeId
+        nodeType
+        state
+        duration
+        outputs
+        error
+        triggeredSignals {
+          targetNode
+          signal
         }
       }
     }

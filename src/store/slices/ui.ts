@@ -16,10 +16,9 @@ export interface UISlice {
   // App-level workflow state
   workflowId: string | null;
   workflowRunId: string | null;
+  conversationId: string | null;  // Single source of truth for conversation ID
   appState: "idle" | "thinking" | "responding" | "waiting" | "complete" | "error";
   isProcessing: boolean;
-
-
 
   // Actions
   toggleSidebar: (forceState?: boolean) => void;
@@ -31,6 +30,7 @@ export interface UISlice {
     workflowId: string,
     workflowRunId: string
   ) => void;
+  setConversationId: (conversationId: string) => void;
   updateAppState: (appState: UISlice["appState"]) => void;
   setProcessing: (isProcessing: boolean) => void;
   resetWorkflow: () => void;
@@ -47,18 +47,9 @@ const initialUIState: UIState = {
   // App-level workflow state
   workflowId: null,
   workflowRunId: null,
+  conversationId: null,
   appState: "idle",
   isProcessing: false,
-
-  // Workflow execution state
-  workflowExecution: {
-    executionId: null,
-    status: null,
-    completedNodes: {},
-    pendingSignals: {},
-    activeNodes: [],
-    timestamp: null,
-  },
 };
 
 // Create UI slice
@@ -97,6 +88,14 @@ export const createUISlice = (set: any, get: any, api: any): UISlice => ({
     }));
   },
 
+  setConversationId: (conversationId: string) => {
+    console.log(`[UISlice] Setting conversationId to: ${conversationId}`);
+    set((state: any) => ({
+      ...state,
+      conversationId,
+    }));
+  },
+
   updateAppState: (appState: UISlice["appState"]) => {
     set((state: any) => ({
       ...state,
@@ -116,10 +115,10 @@ export const createUISlice = (set: any, get: any, api: any): UISlice => ({
       ...state,
       workflowId: null,
       workflowRunId: null,
+      conversationId: null,
       appState: "idle",
       isProcessing: false,
     }));
   },
-
 
 });
