@@ -391,6 +391,7 @@ export type Mutation = {
   deleteCredential: Scalars['Boolean']['output'];
   deleteWorkflow: Scalars['Boolean']['output'];
   executeWorkflow: WorkflowExecution;
+  flushWorkflowCache: Scalars['Boolean']['output'];
   invokeNodeInteraction: NodeInteractionResult;
   resetQueueMetrics: Scalars['Boolean']['output'];
   saveWorkflow: Workflow;
@@ -435,6 +436,11 @@ export type MutationExecuteWorkflowArgs = {
   input: Scalars['JSON']['input'];
   mode?: InputMaybe<ExecutionMode>;
   pauseAfterNode?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type MutationFlushWorkflowCacheArgs = {
+  workflowId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 
@@ -968,3 +974,10 @@ export type InvokeNodeInteractionMutationVariables = Exact<{
 
 
 export type InvokeNodeInteractionMutation = { __typename?: 'Mutation', invokeNodeInteraction: { __typename?: 'NodeInteractionResult', success: boolean, data?: any | null, error?: string | null, jobId?: string | null, progress?: number | null } };
+
+export type FlushWorkflowCacheMutationVariables = Exact<{
+  workflowId?: InputMaybe<Scalars['ID']['input']>;
+}>;
+
+
+export type FlushWorkflowCacheMutation = { __typename?: 'Mutation', flushWorkflowCache: boolean };

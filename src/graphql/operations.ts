@@ -59,3 +59,10 @@ export const INVOKE_NODE_INTERACTION = gql`
     }
   }
 `;
+
+// Flush workflow cache mutation
+export const FLUSH_WORKFLOW_CACHE = gql`
+  mutation FlushWorkflowCache($workflowId: ID) {
+    flushWorkflowCache(workflowId: $workflowId)
+  }
+`;
