@@ -56,110 +56,128 @@ export const createResponseSlice = (set: any, get: any, api: any): ResponseSlice
     ...initialActiveResponseState,
 
     startActiveResponse: (chatId: string, userId: string) => {
+      // Reset chunk animator when starting new response
+      if (chunkAnimator) {
+        chunkAnimator.reset();
+      }
+
       set((state: any) => ({
         ...state,
         chatId,
         userId,
         messageSource: "agent",
+        messageChunks: [],
+        progressUpdate: null,
+        jsonData: [],
+        actionSuggestion: null,
+        text: null,
+        cards: null,
+        questions: null,
+        form: null,
+        nodeExecutionEvent: null,
         startTime: Date.now(),
         endTime: null,
       }));
     },
 
     processMessage: (message: any) => {
+      const currentQuestions = get().questions;
+      if (currentQuestions) {
+        console.log(`[Questions] Processing ${message.__typename} while questions exist`);
+      }
       set((state: any) => {
-        const newState = { ...state };
+        // Only update response slice properties
+        const responseSliceKeys = Object.keys(initialActiveResponseState);
+        const currentResponseState: any = {};
+        responseSliceKeys.forEach((key) => {
+          currentResponseState[key] = state[key];
+        });
+
+        const newState = { ...currentResponseState };
 
         // Process different message types flexibly
         switch (message.__typename) {
           case "MessageChunk":
             // Let ChunkAnimator handle all chunk state management and ordering
-            //console.log(`📨 [Response] Received chunk #${message.index} with ${message.text?.length || 0} chars`);
-            // Get conversationId from UI state
             const conversationId = get().conversationId;
             if (conversationId && state.chatId) {
               const animator = getOrCreateChunkAnimator(conversationId, state.chatId);
               animator.addChunk(message);
-              // Update state with chunks from animator
               newState.messageChunks = animator.getChunks();
             }
             break;
 
           case "ProgressUpdate":
-            // Tier 2: Structured progress updates (semantic UI state)
             newState.progressUpdate = message;
             break;
 
           case "Text":
-            // Tier 2: Structured text messages
             newState.text = message;
             break;
 
           case "JsonData":
-            // Tier 1: Raw JSON data from server
             newState.jsonData = [...(newState.jsonData || []), message];
             break;
 
           case "ActionSuggestion":
-            // Tier 2: Structured action suggestions (semantic UI state)
             newState.actionSuggestion = message;
             break;
 
           case "Cards":
-            // Tier 2: Card components from server
             newState.cards = message;
             break;
 
           case "Questions":
-            // Tier 2: Follow-up questions from server
             newState.questions = message;
+            console.log("[Questions] Setting questions:", message);
+            break;
+
+          case "Form":
+            // Form is now stored in UI state (application state) instead of response state
+            const setForm = get().setForm;
+            if (setForm) {
+              setForm(message);
+            }
+            // Automatically open sidebar when form is received
+            const toggleSidebar = get().toggleSidebar;
+            if (toggleSidebar) {
+              toggleSidebar(true);
+            }
             break;
 
           case "NodeExecutionEvent":
-            // Tier 2: Workflow node execution events
             newState.nodeExecutionEvent = message;
             break;
 
           case "State":
-            // Handle State messages - update appState directly in newState
-            const stateValue = message.component?.props?.state;
+            // Handle State messages - same structure as other messages
+            const stateValue = message.state || message.component?.props?.state;
             if (stateValue) {
               const appState = stateValue.toLowerCase();
-              // Update appState directly in newState (single atomic update)
-              newState.appState = appState;
+              // Update appState in UI slice where it belongs
+              get().updateAppState(appState);
             }
             break;
 
           case "SystemMessage":
-            // Handle system messages
             if (message.type === "conversation_complete") {
-              console.log("🏁 [Response] Conversation complete - checking chunk status");
-              const chunkCount = state.messageChunks?.length || 0;
-              if (chunkCount > 0) {
-                const indices = state.messageChunks.map((c: any) => c.index).sort((a: number, b: number) => a - b);
-                console.log(`📊 [Response] Received ${chunkCount} chunks with indices:`, indices);
-
-                // Check for gaps in the sequence
-                for (let i = 1; i < indices.length; i++) {
-                  if (indices[i] !== indices[i - 1] + 1) {
-                    console.warn(
-                      `⚠️ [Response] Gap detected! Missing chunk(s) between ${indices[i - 1]} and ${indices[i]}`
-                    );
-                  }
-                }
-              }
               newState.state = "complete";
               newState.endTime = Date.now();
             }
             break;
 
           default:
-            // For unknown message types, log them (don't store in state)
-            // console.log("Unknown message type received:", message.__typename, message);
             break;
         }
 
-        return newState;
+        const updates: any = {};
+        responseSliceKeys.forEach((key) => {
+          if (newState[key] !== currentResponseState[key]) {
+            updates[key] = newState[key];
+          }
+        });
+
+        return updates;
       });
     },
 
@@ -194,6 +212,7 @@ export const createResponseSlice = (set: any, get: any, api: any): ResponseSlice
         text: null,
         cards: null,
         questions: null,
+        nodeExecutionEvent: null,
         startTime: null,
         endTime: null,
       }));

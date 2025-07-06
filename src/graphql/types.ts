@@ -28,7 +28,7 @@ export type ActionSuggestion = BaseEvent & {
   userId: Scalars['ID']['output'];
 };
 
-export type AgentEvent = ActionSuggestion | AudioChunk | Cards | JsonData | MessageChunk | NodeExecutionEvent | ProgressUpdate | Questions | State | Text;
+export type AgentEvent = ActionSuggestion | AudioChunk | Cards | Form | JsonData | MessageChunk | NodeExecutionEvent | ProgressUpdate | Questions | State | Text;
 
 export type AgentInput = {
   chatId: Scalars['ID']['input'];
@@ -262,6 +262,16 @@ export type ExecutionTimelineItem = {
   relativeStart: Scalars['Float']['output'];
   startTime: Scalars['Float']['output'];
   status: Scalars['String']['output'];
+};
+
+export type Form = BaseEvent & {
+  __typename?: 'Form';
+  chatId: Scalars['ID']['output'];
+  component?: Maybe<ComponentSpec>;
+  conversationId: Scalars['ID']['output'];
+  providerId?: Maybe<Scalars['String']['output']>;
+  timestamp?: Maybe<Scalars['String']['output']>;
+  userId: Scalars['ID']['output'];
 };
 
 export type HealthStatus = {

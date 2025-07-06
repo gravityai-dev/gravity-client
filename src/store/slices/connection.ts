@@ -45,6 +45,13 @@ function createSubscription(
       onData(result);
     },
     error: (error: any) => {
+      // Check if this is an AbortError (happens when we clean up subscriptions)
+      const isAbortError = error?.name === "AbortError" || error?.message?.includes("AbortError");
+      if (isAbortError) {
+        console.log(`[${subscriptionName}] Subscription aborted (expected during cleanup)`);
+        return;
+      }
+
       // Check if this is a network error that should trigger reconnection
       const isNetworkError =
         error?.message?.includes("INCOMPLETE_CHUNKED_ENCODING") ||
@@ -244,11 +251,13 @@ export const createConnectionSlice = (set: any, get: any, api: any): ConnectionS
 
     console.log(`🧹 [ConnectionSlice] Cleaning up ${subscriptions.size} subscriptions`);
 
-    subscriptions.forEach((sub: any, key: string) => {
+    subscriptions.forEach((entry: any, key: string) => {
       console.log(`🧹 [ConnectionSlice] Cleaning up subscription: ${key}`);
-      if (sub && typeof sub.unsubscribe === "function") {
+      if (entry?.subscription && typeof entry.subscription.unsubscribe === "function") {
         try {
-          sub.unsubscribe();
+          entry.subscription.unsubscribe();
+          // Mark as closed to prevent reuse
+          entry.closed = true;
         } catch (error) {
           console.error(`❌ [ConnectionSlice] Error cleaning up subscription ${key}:`, error);
         }
@@ -260,7 +269,7 @@ export const createConnectionSlice = (set: any, get: any, api: any): ConnectionS
   updateSubscription: () => {
     const state = get();
     const { client, subscriptions, conversationId } = state;
-    
+
     if (!conversationId) {
       console.warn("[GravityClient] Cannot update subscription - no conversationId set in UI state");
       return;
@@ -273,48 +282,42 @@ export const createConnectionSlice = (set: any, get: any, api: any): ConnectionS
 
     // Check if we already have a subscription for this conversation ID
     const subscriptionKey = `session:${conversationId}`;
-    const existingSubscription = subscriptions.get(subscriptionKey);
-
-    // Simple logging
-    if (existingSubscription && !existingSubscription.closed) {
-      console.log(`[GravityClient] ✅ Already subscribed to ${conversationId}`);
-    }
+    const existingEntry = subscriptions.get(subscriptionKey);
 
     // If we have an active subscription for this exact conversation ID, do NOT recreate
-    if (existingSubscription && !existingSubscription.closed) {
+    if (existingEntry && !existingEntry.closed && existingEntry.subscription) {
       return;
     }
-    
+
     // Additional safeguard: Check if we just updated this same conversation ID (within 100ms)
     const now = Date.now();
-    if (lastSubscriptionUpdate && 
-        lastSubscriptionUpdate.conversationId === conversationId && 
-        (now - lastSubscriptionUpdate.timestamp) < 100) {
+    if (
+      lastSubscriptionUpdate &&
+      lastSubscriptionUpdate.conversationId === conversationId &&
+      now - lastSubscriptionUpdate.timestamp < 100
+    ) {
       return;
     }
-    
-
 
     // Clean up any other subscriptions (different conversation IDs)
     if (subscriptions.size > 0) {
-      console.log("[GravityClient] 🔄 Cleaning up", subscriptions.size, "existing subscription(s)");
-      subscriptions.forEach((sub: any, key: string) => {
-
-        if (sub && typeof sub.unsubscribe === "function") {
+      subscriptions.forEach((entry: any, key: string) => {
+        // Only clean up subscriptions for DIFFERENT conversation IDs
+        if (key !== subscriptionKey && entry?.subscription && typeof entry.subscription.unsubscribe === "function") {
           try {
-            sub.unsubscribe();
+            entry.subscription.unsubscribe();
+            subscriptions.delete(key);
           } catch (error) {
             console.error(`❌ [GravityClient] Error unsubscribing from ${key}:`, error);
           }
         }
       });
-      subscriptions.clear();
     }
 
     // Set up new subscription with new conversationId
     try {
-      console.log(`[GravityClient] 🔄 Subscribing to ${conversationId}`);
-      
+      console.log(`🔄 Subscribing to conversation: ${conversationId}`);
+
       // Record this subscription update
       lastSubscriptionUpdate = { conversationId, timestamp: Date.now() };
       const messageSubscription = createSubscription(
@@ -326,23 +329,8 @@ export const createConnectionSlice = (set: any, get: any, api: any): ConnectionS
         {
           onData: (result: any) => {
             if (result?.data?.aiResult) {
-              // console.log("[GravityClient] Received AI result message:", {
-              //   type: result.data.aiResult.__typename,
-              //   conversationId: result.data.aiResult.conversationId,
-              //   workflowId: result.data.aiResult.workflowId,
-              //   ...(result.data.aiResult.__typename === "MessageChunk" && {
-              //     index: result.data.aiResult.index,
-              //     content: result.data.aiResult.content?.substring(0, 50) + "...",
-              //   }),
-              // });
-              // })
               const processMessage = get().processMessage;
               if (processMessage) {
-                // Log MessageChunk receipts for debugging
-                if (result.data.aiResult.__typename === "MessageChunk") {
-                  // console.log(`📨 [Subscription] Received MessageChunk #${result.data.aiResult.index}`);
-                }
-                
                 processMessage(result.data.aiResult);
               }
             }
@@ -352,9 +340,13 @@ export const createConnectionSlice = (set: any, get: any, api: any): ConnectionS
       );
 
       // Store subscription with conversation ID as key
-      subscriptions.set(subscriptionKey, messageSubscription);
-
-
+      // Also store metadata about the subscription
+      subscriptions.set(subscriptionKey, {
+        subscription: messageSubscription,
+        conversationId,
+        createdAt: Date.now(),
+        closed: false
+      });
     } catch (error) {
       console.error("[GravityClient] ❌ Failed to update subscription:", error);
     }

@@ -50,28 +50,21 @@ export const createConversationSlice = (set: any, get: any, api: any): Conversat
     get().clearActiveResponse();
 
     try {
-      // Get conversationId from params or UI state (single source of truth)
-      let conversationId = params.conversationId || state.conversationId;
+      // ConversationId MUST be provided by the client - no state management here
+      const conversationId = params.conversationId;
       if (!conversationId) {
-        console.error(`[GravityClient] No conversationId available - must be set in UI state`);
-        throw new Error("No conversationId available - ensure conversationId is set in UI state");
+        console.error(`[GravityClient] conversationId is required in params`);
+        throw new Error("conversationId is required - must be provided by the client");
       }
 
-      // Check if conversationId has changed
-      const currentConversationId = state.conversationId;
+      // Check if conversation ID has changed and update subscription if needed
+      const currentConversationId = get().conversationId;
       
       if (conversationId !== currentConversationId) {
-        // Update UI state with new conversation ID
-        const setConversationId = get().setConversationId;
-        if (setConversationId) {
-          setConversationId(conversationId);
-        }
-        
-        // Update subscription to new conversationId
-        const updateSubscription = get().updateSubscription;
-        if (updateSubscription) {
-          updateSubscription();
-        }
+        // Update the conversation ID in the UI slice (single source of truth)
+        get().setConversationId(conversationId);
+        // Update the subscription to match the new conversation ID
+        get().updateSubscription();
       }
 
       const chatId = params.chatId;

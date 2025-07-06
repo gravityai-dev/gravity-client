@@ -80,6 +80,17 @@ export const AI_RESULT_SUBSCRIPTION = gql`
           props
         }
       }
+      ... on Form {
+        chatId
+        conversationId
+        userId
+        providerId
+        timestamp
+        component {
+          type
+          props
+        }
+      }
       ... on State {
         chatId
         conversationId

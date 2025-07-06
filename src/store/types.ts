@@ -60,4 +60,7 @@ export interface UIState {
   // Universal app-level execution state
   appState: "idle" | "thinking" | "responding" | "waiting" | "complete" | "error";
   isProcessing: boolean;
+  
+  // Application-level components that persist across messages
+  form: any | null; // Form components from server
 }

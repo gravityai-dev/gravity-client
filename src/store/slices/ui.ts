@@ -19,6 +19,9 @@ export interface UISlice {
   conversationId: string | null;  // Single source of truth for conversation ID
   appState: "idle" | "thinking" | "responding" | "waiting" | "complete" | "error";
   isProcessing: boolean;
+  
+  // Application-level components that persist across messages
+  form: any | null;
 
   // Actions
   toggleSidebar: (forceState?: boolean) => void;
@@ -34,6 +37,7 @@ export interface UISlice {
   updateAppState: (appState: UISlice["appState"]) => void;
   setProcessing: (isProcessing: boolean) => void;
   resetWorkflow: () => void;
+  setForm: (form: any | null) => void;
 
 
 }
@@ -50,6 +54,9 @@ const initialUIState: UIState = {
   conversationId: null,
   appState: "idle",
   isProcessing: false,
+  
+  // Application-level components
+  form: null,
 };
 
 // Create UI slice
@@ -118,6 +125,14 @@ export const createUISlice = (set: any, get: any, api: any): UISlice => ({
       conversationId: null,
       appState: "idle",
       isProcessing: false,
+      form: null, // Reset form on workflow reset
+    }));
+  },
+
+  setForm: (form: any | null) => {
+    set((state: any) => ({
+      ...state,
+      form,
     }));
   },
 

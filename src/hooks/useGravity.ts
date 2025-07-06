@@ -57,16 +57,16 @@ export function useGravity() {
         setWorkflowState: state.setWorkflowState,
         updateAppState: state.updateAppState,
         resetWorkflow: state.resetWorkflow,
+        form: state.form,
+        setForm: state.setForm,
       };
     })
   );
 
-  // Cleanup subscription on unmount
-  useEffect(() => {
-    return () => {
-      gravityState.cleanupSubscription();
-    };
-  }, [gravityState.cleanupSubscription]);
+  // Note: We do NOT cleanup subscriptions on unmount because:
+  // 1. Subscriptions should persist across component lifecycles
+  // 2. The subscription is tied to the conversation ID, not component lifecycle
+  // 3. Cleanup should only happen when explicitly changing conversations or disconnecting
 
   return gravityState;
 }
