@@ -4,4 +4,4 @@
 
 export * from './operations';
 export * from './subscriptions';
-export * from './types';
+// Note: types are intentionally not exported to keep schema private

@@ -5,6 +5,7 @@
 
 import { ActiveResponseState } from "../types";
 import { ChunkAnimator } from "./chunks";
+import { getOrCreateCardsHandler, clearCardsHandler } from "./cards";
 
 // Response slice interface - flattened for easy access
 export interface ResponseSlice extends ActiveResponseState {
@@ -102,41 +103,52 @@ export const createResponseSlice = (set: any, get: any, api: any): ResponseSlice
             const conversationId = get().conversationId;
             if (conversationId && state.chatId) {
               const animator = getOrCreateChunkAnimator(conversationId, state.chatId);
-              animator.addChunk(message);
+              // Pass component.props which contains text and index
+              animator.addChunk(message.component.props);
               newState.messageChunks = animator.getChunks();
             }
             break;
 
           case "ProgressUpdate":
-            newState.progressUpdate = message;
+            newState.progressUpdate = message.component.props;
             break;
 
           case "Text":
-            newState.text = message;
+            newState.text = message.component.props;
             break;
 
           case "JsonData":
-            newState.jsonData = [...(newState.jsonData || []), message];
+            const jsonDataProps = message.component.props;
+            newState.jsonData = [...(newState.jsonData || []), jsonDataProps];
             break;
 
           case "ActionSuggestion":
-            newState.actionSuggestion = message;
+            newState.actionSuggestion = message.component.props;
             break;
 
           case "Cards":
-            newState.cards = message;
+            // Use CardsHandler for proper accumulation and sorting
+            const conversationIdForCards = get().conversationId;
+            if (conversationIdForCards && state.chatId && message.component.props) {
+              const cardsHandler = getOrCreateCardsHandler(conversationIdForCards, state.chatId);
+              cardsHandler.addCards(message.component.props);
+              newState.cards = cardsHandler.getCards();
+            } else {
+              // No conversation/chat context, just replace
+              newState.cards = message.component.props;
+            }
             break;
 
           case "Questions":
-            newState.questions = message;
-            console.log("[Questions] Setting questions:", message);
+            newState.questions = message.component.props;
+            console.log("[Questions] Setting questions:", message.component.props);
             break;
 
           case "Form":
             // Form is now stored in UI state (application state) instead of response state
             const setForm = get().setForm;
             if (setForm) {
-              setForm(message);
+              setForm(message.component.props);
             }
             // Automatically open sidebar when form is received
             const toggleSidebar = get().toggleSidebar;
@@ -146,6 +158,8 @@ export const createResponseSlice = (set: any, get: any, api: any): ResponseSlice
             break;
 
           case "NodeExecutionEvent":
+            console.log("[NodeExecutionEvent] Setting nodeExecutionEvent:", message);
+            // NodeExecutionEvent is not a standardized message type, it has direct fields
             newState.nodeExecutionEvent = message;
             break;
 
@@ -187,6 +201,13 @@ export const createResponseSlice = (set: any, get: any, api: any): ResponseSlice
         chunkAnimator.markConversationComplete();
       }
 
+      // Clear cards handler for this conversation
+      const conversationId = get().conversationId;
+      const chatId = get().chatId;
+      if (conversationId && chatId) {
+        clearCardsHandler(conversationId, chatId);
+      }
+
       set((state: any) => ({
         ...state,
         endTime: Date.now(),
@@ -197,6 +218,13 @@ export const createResponseSlice = (set: any, get: any, api: any): ResponseSlice
       // Reset chunk animator when clearing
       if (chunkAnimator) {
         chunkAnimator.reset();
+      }
+
+      // Clear cards handler
+      const conversationId = get().conversationId;
+      const chatId = get().chatId;
+      if (conversationId && chatId) {
+        clearCardsHandler(conversationId, chatId);
       }
 
       set((state: any) => ({

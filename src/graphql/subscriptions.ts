@@ -4,93 +4,63 @@
 
 import { gql } from "@apollo/client";
 
+// Shared fields for standard message types
+const STANDARD_FIELDS = `
+  chatId
+  conversationId
+  userId
+  providerId
+  timestamp
+  component {
+    type
+    props
+  }
+`;
+
 export const AI_RESULT_SUBSCRIPTION = gql`
   subscription AiResult($conversationId: ID!) {
     aiResult(conversationId: $conversationId) {
       __typename
+      
+      # Standard message types with shared fields
       ... on MessageChunk {
-        chatId
-        conversationId
-        userId
-        providerId
-        timestamp
-        text
-        index
-        component {
-          type
-          props
-        }
+        ${STANDARD_FIELDS}
       }
       ... on Text {
-        chatId
-        conversationId
-        userId
-        providerId
-        timestamp
-        text
-        component {
-          type
-          props
-        }
+        ${STANDARD_FIELDS}
       }
       ... on ProgressUpdate {
-        chatId
-        conversationId
-        userId
-        providerId
-        timestamp
-        component {
-          type
-          props
-        }
+        ${STANDARD_FIELDS}
       }
       ... on JsonData {
-        chatId
-        conversationId
-        userId
-        providerId
-        timestamp
-        jsonData: data
-        component {
-          type
-          props
-        }
+        ${STANDARD_FIELDS}
       }
       ... on ActionSuggestion {
-        chatId
-        conversationId
-        userId
-        providerId
-        timestamp
-        type
-        payload
-        component {
-          type
-          props
-        }
+        ${STANDARD_FIELDS}
       }
       ... on Questions {
-        chatId
-        conversationId
-        userId
-        providerId
-        timestamp
-        component {
-          type
-          props
-        }
+        ${STANDARD_FIELDS}
       }
       ... on Form {
-        chatId
-        conversationId
-        userId
-        providerId
-        timestamp
-        component {
-          type
-          props
-        }
+        ${STANDARD_FIELDS}
       }
+      ... on Cards {
+        ${STANDARD_FIELDS}
+      }
+      ... on ImageResponse {
+        ${STANDARD_FIELDS}
+      }
+      ... on ToolOutput {
+        ${STANDARD_FIELDS}
+      }
+      ... on Metadata {
+        ${STANDARD_FIELDS}
+      }
+      ... on AudioChunk {
+        ${STANDARD_FIELDS}
+      }
+      
+      # Special message types with additional fields
       ... on State {
         chatId
         conversationId
@@ -104,17 +74,6 @@ export const AI_RESULT_SUBSCRIPTION = gql`
         stateData: data
         label
         variables
-      }
-      ... on Cards {
-        chatId
-        conversationId
-        userId
-        providerId
-        timestamp
-        component {
-          type
-          props
-        }
       }
       ... on NodeExecutionEvent {
         chatId
@@ -133,6 +92,7 @@ export const AI_RESULT_SUBSCRIPTION = gql`
         triggeredSignals {
           targetNode
           signal
+          inputs
         }
       }
     }

@@ -28,7 +28,9 @@ export const setActiveObject = (objectId?: string) => {
 // GraphQL
 export { TALK_TO_AGENT, STEP_WORKFLOW, GET_CHAT_STATUS, INVOKE_NODE_INTERACTION, FLUSH_WORKFLOW_CACHE } from "./graphql/operations";
 export { AI_RESULT_SUBSCRIPTION } from "./graphql/subscriptions";
-// Note: GraphQL types exported separately to avoid conflicts
 
-// Types
+// Types - export existing types from types/index.ts (config, shared)
 export * from "./types";
+
+// Additional public types (connection/response status, component props, message types)
+export type { ConnectionStatus, ResponseStatus, MessageChunk, MessageChunkProps, ProgressUpdateProps } from "./types/public";

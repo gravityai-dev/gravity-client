@@ -1,8 +1,8 @@
-import { MessageChunk } from "../../../graphql/types";
+import { MessageChunkProps } from "../../../types/public";
 
 export interface ChunkAnimatorState {
-  chunks: MessageChunk[];
-  animatedChunks: MessageChunk[];
+  chunks: MessageChunkProps[];
+  animatedChunks: MessageChunkProps[];
   completedChunkIndices: Set<number>;
 }
 
@@ -16,14 +16,14 @@ export class ChunkAnimator {
     completedChunkIndices: new Set<number>(),
   };
 
-  private animationCallbacks: Map<string, (chunk: MessageChunk) => void> = new Map();
+  private animationCallbacks: Map<string, (chunk: MessageChunkProps) => void> = new Map();
 
   constructor(private conversationId: string, private messageId: string) {}
 
   /**
    * Add a chunk to the state
    */
-  addChunk(chunk: MessageChunk): void {
+  addChunk(chunk: MessageChunkProps): void {
     // Skip duplicates
     if (this.state.chunks.find((c) => c.index === chunk.index)) {
       return;
@@ -65,7 +65,7 @@ export class ChunkAnimator {
   /**
    * Register a callback for chunk animations
    */
-  onChunkAnimate(id: string, callback: (chunk: MessageChunk) => void): void {
+  onChunkAnimate(id: string, callback: (chunk: MessageChunkProps) => void): void {
     this.animationCallbacks.set(id, callback);
   }
 
@@ -79,14 +79,14 @@ export class ChunkAnimator {
   /**
    * Get all chunks (for immediate display)
    */
-  getChunks(): MessageChunk[] {
+  getChunks(): MessageChunkProps[] {
     return [...this.state.chunks];
   }
 
   /**
    * Get animated chunks
    */
-  getAnimatedChunks(): MessageChunk[] {
+  getAnimatedChunks(): MessageChunkProps[] {
     return [...this.state.animatedChunks];
   }
 
