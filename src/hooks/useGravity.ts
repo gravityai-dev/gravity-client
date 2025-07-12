@@ -26,7 +26,7 @@ export function useGravity() {
         sendMessage: state.sendMessage,
         clearConversation: state.clearConversation,
 
-        // Response slice  
+        // Response slice
         chatId: state.chatId,
         userId: state.userId,
         messageSource: state.messageSource,
@@ -47,8 +47,10 @@ export function useGravity() {
 
         // UI slice
         sidebarOpen: state.sidebarOpen,
+        sidebarMode: state.sidebarMode,
         componentConfig: state.componentConfig,
         toggleSidebar: state.toggleSidebar,
+        setSidebarMode: state.setSidebarMode,
         setComponentConfig: state.setComponentConfig,
         workflowId: state.workflowId,
         workflowRunId: state.workflowRunId,

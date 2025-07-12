@@ -25,12 +25,29 @@ export const setActiveObject = (objectId?: string) => {
   store.setActiveObject(objectId);
 };
 
+export const setSidebarMode = (mode: "closed" | "compact" | "expanded") => {
+  const store = useGravityStore.getState();
+  store.setSidebarMode(mode);
+};
+
 // GraphQL
-export { TALK_TO_AGENT, STEP_WORKFLOW, GET_CHAT_STATUS, INVOKE_NODE_INTERACTION, FLUSH_WORKFLOW_CACHE } from "./graphql/operations";
+export {
+  TALK_TO_AGENT,
+  STEP_WORKFLOW,
+  GET_CHAT_STATUS,
+  INVOKE_NODE_INTERACTION,
+  FLUSH_WORKFLOW_CACHE,
+} from "./graphql/operations";
 export { AI_RESULT_SUBSCRIPTION } from "./graphql/subscriptions";
 
 // Types - export existing types from types/index.ts (config, shared)
 export * from "./types";
 
 // Additional public types (connection/response status, component props, message types)
-export type { ConnectionStatus, ResponseStatus, MessageChunk, MessageChunkProps, ProgressUpdateProps } from "./types/public";
+export type {
+  ConnectionStatus,
+  ResponseStatus,
+  MessageChunk,
+  MessageChunkProps,
+  ProgressUpdateProps,
+} from "./types/public";

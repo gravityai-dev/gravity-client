@@ -47,7 +47,11 @@ export const createConversationSlice = (set: any, get: any, api: any): Conversat
     }
 
     // Clear any previous response data before starting new message
-    get().clearActiveResponse();
+    // BUT not if this is a silent message (e.g. form trigger from sidebar)
+    const isSilent = params.metadata?.silent === true;
+    if (!isSilent) {
+      get().clearActiveResponse();
+    }
 
     try {
       // ConversationId MUST be provided by the client - no state management here
@@ -74,9 +78,12 @@ export const createConversationSlice = (set: any, get: any, api: any): Conversat
       }
 
       // Start active response to set up the state
-      const startActiveResponse = get().startActiveResponse;
-      if (startActiveResponse) {
-        startActiveResponse(chatId, params.userId);
+      // BUT not if this is a silent message (e.g. form trigger from sidebar)
+      if (!isSilent) {
+        const startActiveResponse = get().startActiveResponse;
+        if (startActiveResponse) {
+          startActiveResponse(chatId, params.userId);
+        }
       }
 
       const mutationInput = {

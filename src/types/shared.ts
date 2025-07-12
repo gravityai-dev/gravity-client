@@ -9,6 +9,18 @@ export interface GravityMessage {
   content: any; // Flexible JSON content
   timestamp: string;
   source: 'user' | 'agent';
+  metadata?: {
+    workflowId?: string;
+    targetTriggerNode?: string;
+    silent?: boolean;
+    enableAudio?: boolean;
+    targetAgent?: string;
+    [key: string]: any; // Allow additional metadata
+  };
+  conversationId?: string;
+  chatId?: string;
+  userId?: string;
+  providerId?: string;
 }
 
 // Component specification for UI rendering
@@ -33,6 +45,7 @@ export interface SendMessageParams {
   chatId: string;
   providerId?: string;
   timestamp?: string;
+  silent?: boolean;  // If true, message won't be added to UI state
   metadata?: {
     workflowId?: string;
     targetAgent?: string;

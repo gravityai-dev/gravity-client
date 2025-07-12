@@ -10,6 +10,7 @@ import { UIState } from "../types";
 export interface UISlice {
   // State
   sidebarOpen: boolean;
+  sidebarMode: "closed" | "compact" | "expanded"; // New: explicit sidebar modes
   componentConfig: Record<string, React.ComponentType<any>>;
   activeObjectId?: string;
 
@@ -25,6 +26,7 @@ export interface UISlice {
 
   // Actions
   toggleSidebar: (forceState?: boolean) => void;
+  setSidebarMode: (mode: "closed" | "compact" | "expanded") => void; // New action
   setComponentConfig: (config: Record<string, React.ComponentType<any>>) => void;
   setActiveObject: (objectId?: string) => void;
 
@@ -42,9 +44,10 @@ export interface UISlice {
 
 }
 
-// Initial state
+// Initial UI state
 const initialUIState: UIState = {
   sidebarOpen: false,
+  sidebarMode: "closed" as "closed" | "compact" | "expanded",
   componentConfig: {},
   activeObjectId: undefined,
 
@@ -52,7 +55,7 @@ const initialUIState: UIState = {
   workflowId: null,
   workflowRunId: null,
   conversationId: null,
-  appState: "idle",
+  appState: "idle" as "idle" | "thinking" | "responding" | "waiting" | "complete" | "error",
   isProcessing: false,
   
   // Application-level components
@@ -64,9 +67,22 @@ export const createUISlice = (set: any, get: any, api: any): UISlice => ({
   ...initialUIState,
 
   toggleSidebar: (forceState?: boolean) => {
+    set((state: any) => {
+      const newOpen = forceState !== undefined ? forceState : !state.sidebarOpen;
+      return {
+        ...state,
+        sidebarOpen: newOpen,
+        // Update sidebar mode based on open state
+        sidebarMode: newOpen ? (state.form || state.isProcessing ? "expanded" : "compact") : "closed"
+      };
+    });
+  },
+
+  setSidebarMode: (mode: "closed" | "compact" | "expanded") => {
     set((state: any) => ({
       ...state,
-      sidebarOpen: forceState !== undefined ? forceState : !state.sidebarOpen,
+      sidebarMode: mode,
+      sidebarOpen: mode !== "closed"
     }));
   },
 
@@ -133,6 +149,8 @@ export const createUISlice = (set: any, get: any, api: any): UISlice => ({
     set((state: any) => ({
       ...state,
       form,
+      // Automatically expand sidebar when form arrives
+      sidebarMode: form && state.sidebarOpen ? "expanded" : state.sidebarMode
     }));
   },
 

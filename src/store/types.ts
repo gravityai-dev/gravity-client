@@ -49,6 +49,7 @@ export interface ConversationState {
 // UI state
 export interface UIState {
   sidebarOpen: boolean;
+  sidebarMode: "closed" | "compact" | "expanded";
   componentConfig: Record<string, React.ComponentType<any>>;
   activeObjectId?: string;
 
