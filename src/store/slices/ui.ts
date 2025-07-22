@@ -17,10 +17,10 @@ export interface UISlice {
   // App-level workflow state
   workflowId: string | null;
   workflowRunId: string | null;
-  conversationId: string | null;  // Single source of truth for conversation ID
+  conversationId: string | null; // Single source of truth for conversation ID
   appState: "idle" | "thinking" | "responding" | "waiting" | "complete" | "error";
   isProcessing: boolean;
-  
+
   // Application-level components that persist across messages
   form: any | null;
 
@@ -31,17 +31,12 @@ export interface UISlice {
   setActiveObject: (objectId?: string) => void;
 
   // Workflow state actions
-  setWorkflowState: (
-    workflowId: string,
-    workflowRunId: string
-  ) => void;
+  setWorkflowState: (workflowId: string, workflowRunId: string) => void;
   setConversationId: (conversationId: string) => void;
   updateAppState: (appState: UISlice["appState"]) => void;
   setProcessing: (isProcessing: boolean) => void;
   resetWorkflow: () => void;
   setForm: (form: any | null) => void;
-
-
 }
 
 // Initial UI state
@@ -57,7 +52,7 @@ const initialUIState: UIState = {
   conversationId: null,
   appState: "idle" as "idle" | "thinking" | "responding" | "waiting" | "complete" | "error",
   isProcessing: false,
-  
+
   // Application-level components
   form: null,
 };
@@ -73,7 +68,7 @@ export const createUISlice = (set: any, get: any, api: any): UISlice => ({
         ...state,
         sidebarOpen: newOpen,
         // Update sidebar mode based on open state
-        sidebarMode: newOpen ? (state.form || state.isProcessing ? "expanded" : "compact") : "closed"
+        sidebarMode: newOpen ? (state.form || state.isProcessing ? "expanded" : "compact") : "closed",
       };
     });
   },
@@ -82,7 +77,7 @@ export const createUISlice = (set: any, get: any, api: any): UISlice => ({
     set((state: any) => ({
       ...state,
       sidebarMode: mode,
-      sidebarOpen: mode !== "closed"
+      sidebarOpen: mode !== "closed",
     }));
   },
 
@@ -100,10 +95,7 @@ export const createUISlice = (set: any, get: any, api: any): UISlice => ({
     }));
   },
 
-  setWorkflowState: (
-    workflowId: string,
-    workflowRunId: string
-  ) => {
+  setWorkflowState: (workflowId: string, workflowRunId: string) => {
     set((state: any) => ({
       ...state,
       workflowId,
@@ -150,8 +142,7 @@ export const createUISlice = (set: any, get: any, api: any): UISlice => ({
       ...state,
       form,
       // Automatically expand sidebar when form arrives
-      sidebarMode: form && state.sidebarOpen ? "expanded" : state.sidebarMode
+      sidebarMode: form && state.sidebarOpen ? "expanded" : state.sidebarMode,
     }));
   },
-
 });
