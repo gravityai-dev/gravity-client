@@ -33,6 +33,7 @@ export const setSidebarMode = (mode: "closed" | "compact" | "expanded") => {
 // GraphQL
 export {
   TALK_TO_AGENT,
+  TALK_TO_AGENT_WITH_AUDIO,
   STEP_WORKFLOW,
   GET_CHAT_STATUS,
   INVOKE_NODE_INTERACTION,

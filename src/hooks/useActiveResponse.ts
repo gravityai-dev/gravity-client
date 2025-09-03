@@ -14,6 +14,7 @@ export const useActiveResponse = () => {
     userId,
     messageSource,
     messageChunks,
+    audioChunks,
     progressUpdate,
     jsonData,
     actionSuggestion,
@@ -64,36 +65,27 @@ export const useActiveResponse = () => {
     chatId,
     userId,
     messageSource,
-    
-    // Streaming data
     messageChunks,
-    fullMessage: getStreamingText(),
-    currentChunk: getCurrentChunk(),
-    
-    // Structured data (Tier 2)
+    audioChunks,
     progressUpdate,
+    jsonData,
     actionSuggestion,
     text,
-    
-    // Raw data (Tier 1)
-    jsonData,
-    
-    // Timing
     startTime,
     endTime,
+    appState,
     
-    // State helpers
+    // State check helpers
     isIdle,
     isThinking,
     isResponding,
     isComplete,
     isActive,
     
-    // Data helpers
+    // Data access helpers
     getProgress,
     getActions,
     getStreamingText,
-    getCurrentChunk,
     
     // Actions
     startActiveResponse,

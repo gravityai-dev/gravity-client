@@ -53,3 +53,21 @@ export interface SendMessageParams {
     [key: string]: any;
   };
 }
+
+// Send audio message parameters
+export interface SendAudioMessageParams {
+  audioInput: string; // Base64 encoded audio data
+  userId: string;
+  conversationId: string;
+  chatId: string;
+  providerId?: string;
+  timestamp?: string;
+  metadata?: {
+    workflowId?: string;
+    targetTriggerNode?: string;
+    audioFormat?: string;
+    sampleRate?: number;
+    duration?: number;
+    [key: string]: any;
+  };
+}

@@ -23,6 +23,7 @@ const initialActiveResponseState: ActiveResponseState = {
 
   // Tier 1 & 2 JSON storage (Tier 3 bypasses state and goes directly to UI)
   messageChunks: [], // Tier 1: Raw streaming chunks
+  audioChunks: null, // Current audio chunk from Nova
   progressUpdate: null, // Tier 2: Structured progress updates
   jsonData: [], // Tier 1: Raw JSON data from server
   actionSuggestion: null, // Tier 2: Structured action suggestions
@@ -173,6 +174,11 @@ export const createResponseSlice = (set: any, get: any, api: any): ResponseSlice
             }
             break;
 
+          case "AudioChunk":
+            newState.audioChunks = message.component.props;
+            console.log("[AudioChunk] Setting audio chunk:", message.component.props);
+            break;
+
           case "SystemMessage":
             if (message.type === "conversation_complete") {
               newState.state = "complete";
@@ -234,6 +240,7 @@ export const createResponseSlice = (set: any, get: any, api: any): ResponseSlice
         userId: null,
         messageSource: null,
         messageChunks: [],
+        audioChunks: null,
         progressUpdate: null,
         jsonData: [],
         actionSuggestion: null,

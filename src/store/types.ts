@@ -27,6 +27,7 @@ export interface ActiveResponseState {
 
   // Flexible message storage - any JSON from server (3-tier architecture)
   messageChunks: any[]; // Streaming text chunks
+  audioChunks: any | null; // Current audio chunk from Nova
   progressUpdate: any | null; // Latest progress update
   jsonData: any[]; // Raw JSON data from server
   actionSuggestion: any | null; // Latest action suggestions
