@@ -68,8 +68,19 @@ export const createConversationSlice = (set: any, get: any, api: any): Conversat
       if (conversationId !== currentConversationId) {
         // Update the conversation ID in the UI slice (single source of truth)
         get().setConversationId(conversationId);
-        // Update the subscription to match the new conversation ID
-        get().updateSubscription();
+        
+        // Only update subscription if we don't already have an active one for this conversation
+        const subscriptions = get().subscriptions;
+        const subscriptionKey = `session:${conversationId}`;
+        const existingEntry = subscriptions?.get(subscriptionKey);
+        
+        // Skip subscription update if we already have an active subscription
+        if (!existingEntry || existingEntry.closed) {
+          // Update the subscription to match the new conversation ID
+          get().updateSubscription();
+        } else {
+          console.log(`[GravityClient] Skipping subscription update - already have active subscription for ${conversationId}`);
+        }
       }
 
       const chatId = params.chatId;
@@ -154,8 +165,19 @@ export const createConversationSlice = (set: any, get: any, api: any): Conversat
       if (conversationId !== currentConversationId) {
         // Update the conversation ID in the UI slice
         get().setConversationId(conversationId);
-        // Update the subscription to match the new conversation ID
-        get().updateSubscription();
+        
+        // Only update subscription if we don't already have an active one for this conversation
+        const subscriptions = get().subscriptions;
+        const subscriptionKey = `session:${conversationId}`;
+        const existingEntry = subscriptions?.get(subscriptionKey);
+        
+        // Skip subscription update if we already have an active subscription
+        if (!existingEntry || existingEntry.closed) {
+          // Update the subscription to match the new conversation ID
+          get().updateSubscription();
+        } else {
+          console.log(`[GravityClient] Skipping subscription update - already have active subscription for ${conversationId}`);
+        }
       }
 
       const chatId = params.chatId;

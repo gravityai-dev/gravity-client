@@ -55,8 +55,10 @@ function createSubscription(
       // Check if this is a network error that should trigger reconnection
       const isNetworkError =
         error?.message?.includes("INCOMPLETE_CHUNKED_ENCODING") ||
+        error?.message?.includes("ERR_INCOMPLETE_CHUNK") ||
         error?.message?.includes("net::") ||
-        error?.networkError;
+        error?.networkError ||
+        error?.message?.includes("network error");
 
       if (isNetworkError) {
         console.warn(`🔄 [${subscriptionName}] Network error detected, will auto-reconnect:`, {
@@ -286,16 +288,24 @@ export const createConnectionSlice = (set: any, get: any, api: any): ConnectionS
 
     // If we have an active subscription for this exact conversation ID, do NOT recreate
     if (existingEntry && !existingEntry.closed && existingEntry.subscription) {
+      console.log(`[GravityClient] Subscription already exists for ${conversationId}, skipping`);
       return;
     }
 
-    // Additional safeguard: Check if we just updated this same conversation ID (within 100ms)
+    // Also check if we're in the process of creating a subscription (pending state)
+    if (existingEntry && existingEntry.pending) {
+      console.log(`[GravityClient] Subscription creation pending for ${conversationId}, skipping`);
+      return;
+    }
+
+    // Additional safeguard: Check if we just updated this same conversation ID (within 500ms)
     const now = Date.now();
     if (
       lastSubscriptionUpdate &&
       lastSubscriptionUpdate.conversationId === conversationId &&
-      now - lastSubscriptionUpdate.timestamp < 100
+      now - lastSubscriptionUpdate.timestamp < 500
     ) {
+      console.log(`[GravityClient] Skipping duplicate subscription update for ${conversationId} (too soon)`);
       return;
     }
 
@@ -318,6 +328,15 @@ export const createConnectionSlice = (set: any, get: any, api: any): ConnectionS
     try {
       console.log(`🔄 Subscribing to conversation: ${conversationId}`);
 
+      // Mark subscription as pending to prevent duplicate creation attempts
+      subscriptions.set(subscriptionKey, {
+        subscription: null,
+        conversationId,
+        createdAt: Date.now(),
+        closed: false,
+        pending: true,
+      });
+
       // Record this subscription update
       lastSubscriptionUpdate = { conversationId, timestamp: Date.now() };
       const messageSubscription = createSubscription(
@@ -339,16 +358,18 @@ export const createConnectionSlice = (set: any, get: any, api: any): ConnectionS
         }
       );
 
-      // Store subscription with conversation ID as key
-      // Also store metadata about the subscription
+      // Update the subscription entry with the actual subscription (no longer pending)
       subscriptions.set(subscriptionKey, {
         subscription: messageSubscription,
         conversationId,
         createdAt: Date.now(),
-        closed: false
+        closed: false,
+        pending: false,
       });
     } catch (error) {
       console.error("[GravityClient] ❌ Failed to update subscription:", error);
+      // Remove the pending subscription on error
+      subscriptions.delete(subscriptionKey);
     }
   },
 });
