@@ -1,6 +1,6 @@
 {
   "name": "@gravityai-dev/gravity-client",
-  "version": "0.2.99",
+  "version": "0.2.100",
   "description": "Clean, organized client library for Gravity AI with real-time streaming and 3-tier JSON architecture",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -16,10 +16,10 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch --force",
-    "clean": "rm -rf dist",
-    "prepublishOnly": "npm run clean && npm run build"
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "link": "npm run build && npm link",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -34,7 +34,7 @@
     "@apollo/client": "^3.8.0",
     "@graphql-yoga/apollo-link": "^3.0.1",
     "graphql": "^16.8.0",
-    "react": "^18.2.0",
+    "react": ">=16.8.0",
     "zustand": "^4.4.0"
   },
   "devDependencies": {

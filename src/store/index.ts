@@ -5,7 +5,7 @@
 
 import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
-import { createConnectionSlice, ConnectionSlice } from './slices/connection';
+import { createConnectionSlice, ConnectionSlice } from './slices/connection/index';
 import { createConversationSlice, ConversationSlice } from './slices/conversation';
 import { createResponseSlice, ResponseSlice } from './slices/response';
 import { createUISlice, UISlice } from './slices/ui';
