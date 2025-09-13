@@ -122,12 +122,7 @@ export function updateSubscriptions({
       {
         onData: (result: any) => {
           if (result?.data?.gravityResult) {
-            if (processGravityEvent) {
-              processGravityEvent(result.data.gravityResult);
-            } else {
-              // Default: just log the GravityEvent
-              console.log("[GravityEvent]", result.data.gravityResult);
-            }
+            processMessage(result.data.gravityResult);
           }
         },
         subscriptionName: "gravity",

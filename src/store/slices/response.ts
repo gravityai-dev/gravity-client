@@ -83,6 +83,7 @@ export const createResponseSlice = (set: any, get: any, api: any): ResponseSlice
     },
 
     processMessage: (message: any) => {
+      //console.log("[ProcessMessage] Received message:", message);
       const currentQuestions = get().questions;
       if (currentQuestions) {
         console.log(`[Questions] Processing ${message.__typename} while questions exist`);
@@ -97,97 +98,133 @@ export const createResponseSlice = (set: any, get: any, api: any): ResponseSlice
 
         const newState = { ...currentResponseState };
 
-        // Process different message types flexibly
-        switch (message.__typename) {
-          case "MessageChunk":
-            // Let ChunkAnimator handle all chunk state management and ordering
-            const conversationId = get().conversationId;
-            if (conversationId && state.chatId) {
-              const animator = getOrCreateChunkAnimator(conversationId, state.chatId);
-              // Pass component.props which contains text and index
-              animator.addChunk(message.component.props);
-              newState.messageChunks = animator.getChunks();
-            }
-            break;
+        // Handle new unified GravityEvent format first
+        if (message.__typename === "GravityEvent") {
+          switch (message.eventType) {
+            case "nodeExecution":
+              // Store the full node execution event data
+              newState.nodeExecutionEvent = message.data;
+              console.log("[NodeExecutionEvent] Setting nodeExecutionEvent:", message.data);
+              break;
 
-          case "ProgressUpdate":
-            newState.progressUpdate = message.component.props;
-            break;
+            case "state":
+              // Handle State messages from GravityEvent
+              const stateValue = message.data.state;
+              if (stateValue) {
+                const appState = stateValue.toLowerCase();
+                // Update appState in UI slice where it belongs
+                get().updateAppState(appState);
+                console.log("[State] Setting appState:", appState);
+              }
+              break;
 
-          case "Text":
-            newState.text = message.component.props;
-            break;
+            case "text":
+              newState.text = {
+                text: message.data.text,
+              };
+              console.log("[Text] Setting text:", message.data.text);
+              break;
 
-          case "JsonData":
-            const jsonDataProps = message.component.props;
-            newState.jsonData = [...(newState.jsonData || []), jsonDataProps];
-            break;
+            case "questions":
+              newState.questions = {
+                questions: message.data.questions,
+              };
+              console.log("[Questions] Setting questions:", message.data.questions);
+              break;
 
-          case "ActionSuggestion":
-            newState.actionSuggestion = message.component.props;
-            break;
+            case "audioChunk":
+              newState.audioChunks = message.data;
+              console.log("[AudioChunk] Setting audio chunk:", message.data);
+              break;
 
-          case "Cards":
-            // Use CardsHandler for proper accumulation and sorting
-            const conversationIdForCards = get().conversationId;
-            if (conversationIdForCards && state.chatId && message.component.props) {
-              const cardsHandler = getOrCreateCardsHandler(conversationIdForCards, state.chatId);
-              cardsHandler.addCards(message.component.props);
-              newState.cards = cardsHandler.getCards();
-            } else {
-              // No conversation/chat context, just replace
-              newState.cards = message.component.props;
-            }
-            break;
+            case "progress":
+              newState.progressUpdate = {
+                text: message.data.text,
+                progress: message.data.progress,
+              };
+              console.log("[Progress] Setting progress:", message.data);
+              break;
 
-          case "Questions":
-            newState.questions = message.component.props;
-            console.log("[Questions] Setting questions:", message.component.props);
-            break;
+            case "json":
+              const jsonDataProps = {
+                data: message.data.data,
+                dataType: message.data.dataType,
+              };
+              newState.jsonData = [...(newState.jsonData || []), jsonDataProps];
+              console.log("[JSON] Setting JSON data:", jsonDataProps);
+              break;
 
-          case "Form":
-            // Form is now stored in UI state (application state) instead of response state
-            const setForm = get().setForm;
-            if (setForm) {
-              setForm(message.component.props);
-            }
-            // Automatically open sidebar when form is received
-            const toggleSidebar = get().toggleSidebar;
-            if (toggleSidebar) {
-              toggleSidebar(true);
-            }
-            break;
+            case "form":
+              // Form is now stored in UI state (application state) instead of response state
+              const setForm = get().setForm;
+              if (setForm && message.data.forms && message.data.forms.length > 0) {
+                // Use the first form if multiple forms are provided
+                setForm(message.data.forms[0]);
+              }
+              // Automatically open sidebar when form is received
+              const toggleSidebar = get().toggleSidebar;
+              if (toggleSidebar) {
+                toggleSidebar(true);
+              }
+              console.log("[Form] Setting form:", message.data.forms);
+              break;
 
-          case "NodeExecutionEvent":
-            console.log("[NodeExecutionEvent] Setting nodeExecutionEvent:", message);
-            // NodeExecutionEvent is not a standardized message type, it has direct fields
-            newState.nodeExecutionEvent = message;
-            break;
+            case "cards":
+              // Use CardsHandler for proper accumulation and sorting
+              const conversationIdForCards = get().conversationId;
+              if (conversationIdForCards && state.chatId && message.data.cards) {
+                const cardsHandler = getOrCreateCardsHandler(conversationIdForCards, state.chatId);
+                cardsHandler.addCards(message.data.cards);
+                newState.cards = cardsHandler.getCards();
+              } else {
+                // No conversation/chat context, just replace
+                newState.cards = message.data.cards;
+              }
+              console.log("[Cards] Setting cards:", message.data.cards);
+              break;
 
-          case "State":
-            // Handle State messages - same structure as other messages
-            const stateValue = message.state || message.component?.props?.state;
-            if (stateValue) {
-              const appState = stateValue.toLowerCase();
-              // Update appState in UI slice where it belongs
-              get().updateAppState(appState);
-            }
-            break;
+            case "messageChunk":
+              // Let ChunkAnimator handle all chunk state management and ordering
+              const conversationIdForChunks = get().conversationId;
+              if (conversationIdForChunks && state.chatId) {
+                const animator = getOrCreateChunkAnimator(conversationIdForChunks, state.chatId);
+                animator.addChunk({ text: message.data.text, index: message.data.index });
+                newState.messageChunks = animator.getChunks();
+              }
+              //console.log("[MessageChunk] Setting chunk:", message.data);
+              break;
 
-          case "AudioChunk":
-            newState.audioChunks = message.component.props;
-            console.log("[AudioChunk] Setting audio chunk:", message.component.props);
-            break;
+            default:
+              console.warn("Unknown GravityEvent eventType:", message.eventType);
+              break;
+          }
+        } else {
+          // Process legacy message types
+          switch (message.__typename) {
+            case "ActionSuggestion":
+              newState.actionSuggestion = message.component.props;
+              break;
 
-          case "SystemMessage":
-            if (message.type === "conversation_complete") {
-              newState.state = "complete";
-              newState.endTime = Date.now();
-            }
-            break;
+            case "State":
+              // Handle State messages - same structure as other messages
+              const stateValue = message.state || message.component?.props?.state;
+              if (stateValue) {
+                const appState = stateValue.toLowerCase();
+                // Update appState in UI slice where it belongs
+                get().updateAppState(appState);
+              }
+              break;
 
-          default:
-            break;
+            case "SystemMessage":
+              if (message.type === "conversation_complete") {
+                newState.state = "complete";
+                newState.endTime = Date.now();
+              }
+              break;
+
+            default:
+              break;
+          }
         }
 
         const updates: any = {};

@@ -1,13 +1,13 @@
 {
   "name": "@gravityai-dev/gravity-client",
-  "version": "0.2.100",
+  "version": "0.2.101",
   "description": "Clean, organized client library for Gravity AI with real-time streaming and 3-tier JSON architecture",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
+      "import": "./dist/index.js",
       "require": "./dist/index.js"
     }
   },
