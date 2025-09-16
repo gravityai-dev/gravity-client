@@ -1,4 +1,4 @@
-import { gql } from '@apollo/client';
+import { gql } from "@apollo/client";
 
 // Core agent operations - used by all Gravity AI clients
 
@@ -18,30 +18,12 @@ export const TALK_TO_AGENT = gql`
   }
 `;
 
-// Talk to agent with audio mutation (for speech-to-speech workflows)
-export const TALK_TO_AGENT_WITH_AUDIO = gql`
-  mutation TalkToAgentWithAudio($input: AudioAgentInput!) {
-    talkToAgentWithAudio(input: $input) {
-      chatId
-      conversationId
-      userId
-      executionId
-      providerId
-      success
-      message
-    }
-  }
-`;
-
 // Step workflow mutation (for debug control)
 export const STEP_WORKFLOW = gql`
   mutation DebugNode($workflowId: ID!, $nodeId: String!, $executionId: ID!, $conversationId: String!) {
-    debugNode(input: {
-      workflowId: $workflowId
-      nodeId: $nodeId  
-      executionId: $executionId
-      conversationId: $conversationId
-    }) {
+    debugNode(
+      input: { workflowId: $workflowId, nodeId: $nodeId, executionId: $executionId, conversationId: $conversationId }
+    ) {
       success
       error
       executionId

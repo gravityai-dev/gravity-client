@@ -83,7 +83,7 @@ export const createResponseSlice = (set: any, get: any, api: any): ResponseSlice
     },
 
     processMessage: (message: any) => {
-      //console.log("[ProcessMessage] Received message:", message);
+      console.log("[ProcessMessage] Received message:", message);
       const currentQuestions = get().questions;
       if (currentQuestions) {
         console.log(`[Questions] Processing ${message.__typename} while questions exist`);

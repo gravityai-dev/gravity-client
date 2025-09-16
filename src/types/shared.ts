@@ -46,6 +46,7 @@ export interface SendMessageParams {
   providerId?: string;
   timestamp?: string;
   silent?: boolean;  // If true, message won't be added to UI state
+  isAudio?: boolean; // Flag to indicate if message contains audio data
   metadata?: {
     workflowId?: string;
     targetAgent?: string;

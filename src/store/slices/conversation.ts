@@ -5,14 +5,13 @@
 
 import { ConversationState } from "../types";
 import { GravityMessage, SendMessageParams, SendAudioMessageParams } from "../../types/shared";
-import { TALK_TO_AGENT, TALK_TO_AGENT_WITH_AUDIO } from "../../graphql/operations";
+import { TALK_TO_AGENT } from "../../graphql/operations";
 
 // Conversation slice interface - flattened for easy access
 export interface ConversationSlice extends ConversationState {
   addMessage: (message: GravityMessage) => void;
   clearConversation: () => void;
   sendMessage: (params: SendMessageParams) => Promise<void>;
-  sendAudioMessage: (params: SendAudioMessageParams) => Promise<void>;
 }
 
 // Initial state
@@ -68,18 +67,20 @@ export const createConversationSlice = (set: any, get: any, api: any): Conversat
       if (conversationId !== currentConversationId) {
         // Update the conversation ID in the UI slice (single source of truth)
         get().setConversationId(conversationId);
-        
+
         // Only update subscription if we don't already have an active one for this conversation
         const subscriptions = get().subscriptions;
         const subscriptionKey = `session:${conversationId}`;
         const existingEntry = subscriptions?.get(subscriptionKey);
-        
+
         // Skip subscription update if we already have an active subscription
         if (!existingEntry || existingEntry.closed) {
           // Update the subscription to match the new conversation ID
           get().updateSubscription();
         } else {
-          console.log(`[GravityClient] Skipping subscription update - already have active subscription for ${conversationId}`);
+          console.log(
+            `[GravityClient] Skipping subscription update - already have active subscription for ${conversationId}`
+          );
         }
       }
 
@@ -104,6 +105,7 @@ export const createConversationSlice = (set: any, get: any, api: any): Conversat
         chatId,
         userId: params.userId,
         providerId: params.providerId,
+        isAudio: params.isAudio || false,
         metadata: params.metadata,
       };
 
@@ -118,101 +120,6 @@ export const createConversationSlice = (set: any, get: any, api: any): Conversat
       return result;
     } catch (error: any) {
       console.error("[GravityClient] Failed to send message:", error);
-      console.error("[GravityClient] Error details:", {
-        name: error?.name,
-        message: error?.message,
-        networkError: error?.networkError,
-        graphQLErrors: error?.graphQLErrors,
-      });
-      throw error;
-    } finally {
-      // Clear loading state
-      set((state: any) => ({
-        isLoading: false,
-      }));
-    }
-  },
-
-  sendAudioMessage: async (params: SendAudioMessageParams) => {
-    console.log("[GravityClient] sendAudioMessage called with params:", {
-      ...params,
-      audioInput: params.audioInput ? `${params.audioInput.substring(0, 50)}...` : "No audio",
-    });
-
-    const state = get();
-
-    if (!state.client) {
-      console.error("[GravityClient] No Apollo client available");
-      throw new Error("Not connected to Gravity AI");
-    }
-
-    // Clear any previous response data before starting new message
-    get().clearActiveResponse();
-
-    try {
-      console.log("[GravityClient] Inside sendAudioMessage try block");
-
-      // ConversationId MUST be provided by the client
-      const conversationId = params.conversationId;
-      if (!conversationId) {
-        console.error(`[GravityClient] conversationId is required in params`);
-        throw new Error("conversationId is required - must be provided by the client");
-      }
-
-      // Check if conversation ID has changed and update subscription if needed
-      const currentConversationId = get().conversationId;
-
-      if (conversationId !== currentConversationId) {
-        // Update the conversation ID in the UI slice
-        get().setConversationId(conversationId);
-        
-        // Only update subscription if we don't already have an active one for this conversation
-        const subscriptions = get().subscriptions;
-        const subscriptionKey = `session:${conversationId}`;
-        const existingEntry = subscriptions?.get(subscriptionKey);
-        
-        // Skip subscription update if we already have an active subscription
-        if (!existingEntry || existingEntry.closed) {
-          // Update the subscription to match the new conversation ID
-          get().updateSubscription();
-        } else {
-          console.log(`[GravityClient] Skipping subscription update - already have active subscription for ${conversationId}`);
-        }
-      }
-
-      const chatId = params.chatId;
-      if (!chatId) {
-        console.error(`[GravityClient] No chatId provided`);
-        throw new Error("chatId is required for sending audio messages");
-      }
-
-      // Start active response to set up the state
-      const startActiveResponse = get().startActiveResponse;
-      if (startActiveResponse) {
-        startActiveResponse(chatId, params.userId);
-      }
-
-      const mutationInput = {
-        audioInput: params.audioInput,
-        conversationId,
-        chatId,
-        userId: params.userId,
-        providerId: params.providerId,
-        metadata: params.metadata,
-      };
-
-      // Send GraphQL mutation
-      const result = await state.client.mutate({
-        mutation: TALK_TO_AGENT_WITH_AUDIO,
-        variables: {
-          input: mutationInput,
-        },
-      });
-
-      console.log("[GravityClient] Mutation result received:", result);
-      return result;
-    } catch (error: any) {
-      console.error("[GravityClient] Failed to send audio message:", error);
       console.error("[GravityClient] Error details:", {
         name: error?.name,
         message: error?.message,
