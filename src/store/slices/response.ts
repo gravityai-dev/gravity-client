@@ -24,6 +24,7 @@ const initialActiveResponseState: ActiveResponseState = {
   // Tier 1 & 2 JSON storage (Tier 3 bypasses state and goes directly to UI)
   messageChunks: [], // Tier 1: Raw streaming chunks
   audioChunks: null, // Current audio chunk from Nova
+  audioState: null, // Audio state: NOVA_SPEECH_STARTED, NOVA_SPEECH_STREAMING, NOVA_SPEECH_ENDED, etc.
   progressUpdate: null, // Tier 2: Structured progress updates
   jsonData: [], // Tier 1: Raw JSON data from server
   actionSuggestion: null, // Tier 2: Structured action suggestions
@@ -133,8 +134,10 @@ export const createResponseSlice = (set: any, get: any, api: any): ResponseSlice
               break;
 
             case "audioChunk":
+              // Always pass ALL audio chunks to the player
+              // The player needs to track state changes (STARTED/STREAMING/ENDED)
+              // to know when playback is actually complete
               newState.audioChunks = message.data;
-              console.log("[AudioChunk] Setting audio chunk:", message.data);
               break;
 
             case "progress":
@@ -278,6 +281,7 @@ export const createResponseSlice = (set: any, get: any, api: any): ResponseSlice
         messageSource: null,
         messageChunks: [],
         audioChunks: null,
+        audioState: null,
         progressUpdate: null,
         jsonData: [],
         actionSuggestion: null,

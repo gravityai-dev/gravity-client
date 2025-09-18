@@ -25,6 +25,9 @@ export function useGravity() {
         messages: state.messages,
         sendMessage: state.sendMessage,
         clearConversation: state.clearConversation,
+        
+        // Audio state from response slice
+        audioState: state.audioState,
 
         // Response slice
         chatId: state.chatId,
