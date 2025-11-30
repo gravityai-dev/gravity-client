@@ -8,7 +8,7 @@
 export interface GravityConfig {
   /** Base API URL (e.g., http://localhost:4100) */
   apiUrl: string;
-  /** WebSocket URL (e.g., ws://localhost:4100/ws/gravity-ds) */
+  /** Base WebSocket URL (e.g., ws://localhost:4100) */
   wsUrl: string;
   /** Optional GraphQL URL (defaults to apiUrl + /graphql) */
   graphqlUrl?: string;

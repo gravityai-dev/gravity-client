@@ -6,6 +6,7 @@ import { withZustandData } from "../hoc/withZustandData";
 import { TemplateRenderer } from "./TemplateRenderer";
 import type { GravityConfig, SessionParams } from "../../core/types";
 import type { HistoryManager, HistoryEntry } from "../../core/HistoryManager";
+import { WS_ENDPOINTS } from "../../index";
 
 interface TemplateInfo {
   Component: React.ComponentType<any>;
@@ -71,11 +72,9 @@ export function GravityClient({
   LoadingComponent,
   children,
 }: GravityClientProps): JSX.Element {
-  // WebSocket connection
-  const { isConnected, isReady, events, sendComponentReady, sendUserAction } = useGravityWebSocket(
-    session,
-    config.wsUrl
-  );
+  // WebSocket connection - build full URL from base
+  const wsFullUrl = `${config.wsUrl}${WS_ENDPOINTS.GRAVITY_DS}`;
+  const { isConnected, isReady, events, sendComponentReady, sendUserAction } = useGravityWebSocket(session, wsFullUrl);
 
   // Component loader
   const { loadComponent } = useComponentLoader(config.apiUrl);

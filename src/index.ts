@@ -71,3 +71,9 @@ export {
   type GravityUser,
   type GravityAuthState,
 } from "./auth";
+
+// WebSocket endpoint paths
+export const WS_ENDPOINTS = {
+  GRAVITY_DS: "/ws/gravity-ds",
+  AUDIO: "/ws/audio", // Append /:sessionId when connecting
+} as const;
