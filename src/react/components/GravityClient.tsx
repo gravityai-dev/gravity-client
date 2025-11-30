@@ -74,7 +74,9 @@ export function GravityClient({
 }: GravityClientProps): JSX.Element {
   // WebSocket connection - build full URL from base
   const wsFullUrl = `${config.wsUrl}${WS_ENDPOINTS.GRAVITY_DS}`;
-  const { isConnected, isReady, events, sendComponentReady, sendUserAction } = useGravityWebSocket(session, wsFullUrl);
+  const { isConnected, isReady, events, sendComponentReady, sendUserAction } = useGravityWebSocket(session, wsFullUrl, {
+    getAccessToken: config.getAccessToken,
+  });
 
   // Component loader
   const { loadComponent } = useComponentLoader(config.apiUrl);
