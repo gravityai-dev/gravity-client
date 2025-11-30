@@ -1,14 +1,25 @@
 {
   "name": "@gravityai-dev/gravity-client",
-  "version": "0.2.125",
-  "description": "Clean, organized client library for Gravity AI with real-time streaming and 3-tier JSON architecture",
+  "version": "0.3.0",
+  "description": "React SDK for Gravity AI - The experience layer for AI",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
+      "import": "./dist/index.mjs",
       "require": "./dist/index.js"
+    },
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.mjs",
+      "require": "./dist/core/index.js"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.mjs",
+      "require": "./dist/react/index.js"
     }
   },
   "files": [
@@ -16,10 +27,11 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsup",
+    "dev": "tsup --watch",
     "prepublishOnly": "npm run build",
     "link": "npm run build && npm link",
-    "test": "jest"
+    "typecheck": "tsc --noEmit"
   },
   "repository": {
     "type": "git",
@@ -31,30 +43,30 @@
     "access": "public"
   },
   "dependencies": {
-    "@apollo/client": "^3.8.0",
-    "@graphql-yoga/apollo-link": "^3.0.1",
-    "graphql": "^16.8.0",
-    "react": ">=16.8.0",
+    "oidc-client-ts": "^3.4.1",
+    "react-oidc-context": "^3.3.0",
     "zustand": "^4.4.0"
   },
   "devDependencies": {
-    "@graphql-codegen/cli": "^5.0.0",
-    "@graphql-codegen/typescript": "^4.0.0",
-    "@graphql-codegen/typescript-operations": "^4.0.0",
     "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "tsup": "^8.0.0",
     "typescript": "^5.2.0"
   },
   "peerDependencies": {
-    "react": ">=16.8.0"
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
   },
   "keywords": [
     "gravity-ai",
     "ai",
     "chat",
     "streaming",
-    "graphql",
+    "websocket",
     "react",
-    "zustand"
+    "zustand",
+    "workflow"
   ]
 }

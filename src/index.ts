@@ -1,53 +1,73 @@
 /**
- * Gravity Client Library
- * Clean, organized, self-contained client for Gravity AI
+ * @gravityai-dev/gravity-client
+ *
+ * React SDK for Gravity AI - Real-time AI workflow streaming
  */
 
-// Store and hooks
-export { useGravityStore } from "./store";
-export type { GravityStore } from "./store";
-export { useGravity, useActiveResponse, useConnection } from "./hooks";
-
-// Components
-export * from "./components";
-
-// Utility functions - these will be imported by client apps
-// Note: These are standalone functions that access the store directly
-import { useGravityStore } from "./store";
-
-export const toggleSidebar = (forceState?: boolean) => {
-  const store = useGravityStore.getState();
-  store.toggleSidebar(forceState);
-};
-
-export const setActiveObject = (objectId?: string) => {
-  const store = useGravityStore.getState();
-  store.setActiveObject(objectId);
-};
-
-export const setSidebarMode = (mode: "closed" | "compact" | "expanded") => {
-  const store = useGravityStore.getState();
-  store.setSidebarMode(mode);
-};
-
-// GraphQL
+// Core (framework-agnostic)
 export {
-  TALK_TO_AGENT,
-  STEP_WORKFLOW,
-  GET_CHAT_STATUS,
-  INVOKE_NODE_INTERACTION,
-  FLUSH_WORKFLOW_CACHE,
-} from "./graphql/operations";
-export { AI_RESULT_SUBSCRIPTION } from "./graphql/subscriptions";
+  HistoryManager,
+  historyManager,
+  type UserMessage,
+  type AssistantResponse,
+  type ComponentEntry,
+  type HistoryEntry,
+  type HistoryMetadata,
+} from "./core";
 
-// Types - export existing types from types/index.ts (config, shared)
-export * from "./types";
+export {
+  type GravityConfig,
+  type SessionParams,
+  type StreamingState,
+  type WorkflowState,
+  type ServerMessage,
+  type ComponentInitMessage,
+  type ComponentDataMessage,
+  type ComponentRemoveMessage,
+  type WorkflowStateMessage,
+  type UserActionType,
+  type UserActionPayload,
+} from "./core";
 
-// Additional public types (connection/response status, component props, message types)
-export type {
-  ConnectionStatus,
-  ResponseStatus,
-  MessageChunk,
-  MessageChunkProps,
-  ProgressUpdateProps,
-} from "./types/public";
+// React bindings
+export {
+  // Main component
+  GravityClient,
+  // Additional components
+  ErrorBoundary,
+  ShadowDOMWrapper,
+  ComponentRenderer,
+  TemplateRenderer,
+  // Hooks
+  useGravityWebSocket,
+  useHistoryManager,
+  useComponentLoader,
+  useGraphQL,
+  // Store
+  useComponentData,
+  useAIContext,
+  // Context
+  UserProvider,
+  useUser,
+  // HOC
+  withZustandData,
+} from "./react";
+
+// Profile API (data only, UI in app)
+export {
+  useProfileData,
+  type ProfileData,
+  type Memory,
+  type Insights,
+  type UseProfileDataOptions,
+  type UseProfileDataReturn,
+} from "./react/profile";
+
+// Auth (Provider-Agnostic OIDC)
+export {
+  GravityAuthProvider,
+  useGravityAuth,
+  type GravityAuthConfig,
+  type GravityUser,
+  type GravityAuthState,
+} from "./auth";
