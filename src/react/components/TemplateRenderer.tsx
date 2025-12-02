@@ -35,6 +35,7 @@ interface TemplateRendererProps {
   sendUserAction: (action: string, data: Record<string, any>) => void;
   sessionParams: SessionParams;
   onStateChange?: (state: any) => void;
+  onAction?: (actionType: string, actionData: any) => void;
 }
 
 /**
@@ -51,6 +52,7 @@ export function TemplateRenderer({
   sendUserAction,
   sessionParams,
   onStateChange,
+  onAction,
 }: TemplateRendererProps): JSX.Element | null {
   if (!template && (!templateStack || templateStack.length === 0)) {
     return null;
@@ -103,8 +105,10 @@ export function TemplateRenderer({
                     ...tmpl.props,
                     client: clientContext,
                     onStateChange: onStateChange,
+                    onAction: onAction,
                   },
                 }}
+                onAction={onAction}
               />
             </div>
           );
@@ -129,6 +133,7 @@ export function TemplateRenderer({
           onStateChange: onStateChange,
         },
       }}
+      onAction={onAction}
     />
   );
 }

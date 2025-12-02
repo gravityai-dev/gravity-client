@@ -1,2 +1,2 @@
 export { useComponentData } from "./componentData";
-export { useAIContext } from "./aiContext";
+export { useAIContext, type ComponentAction } from "./aiContext";

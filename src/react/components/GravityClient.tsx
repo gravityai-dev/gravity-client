@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useCallback } from "react";
 import { useGravityWebSocket } from "../hooks/useGravityWebSocket";
 import { useComponentLoader } from "../hooks/useComponentLoader";
 import { useHistoryManager } from "../hooks/useHistoryManager";
 import { withZustandData } from "../hoc/withZustandData";
 import { TemplateRenderer } from "./TemplateRenderer";
+import { useAIContext } from "../store/aiContext";
 import type { GravityConfig, SessionParams } from "../../core/types";
 import type { HistoryManager, HistoryEntry } from "../../core/HistoryManager";
 import { WS_ENDPOINTS } from "../../index";
@@ -43,6 +44,8 @@ interface GravityClientProps {
   }) => void;
   /** Callback when template state changes */
   onStateChange?: (state: any) => void;
+  /** Callback when component triggers an action (click, submit, etc.) */
+  onAction?: (actionType: string, actionData: any) => void;
   /** Custom loading component */
   LoadingComponent?: React.ComponentType<{ isConnected: boolean; isReady: boolean }>;
   /** Custom template renderer */
@@ -69,6 +72,7 @@ export function GravityClient({
   session,
   onReady,
   onStateChange,
+  onAction,
   LoadingComponent,
   children,
 }: GravityClientProps): JSX.Element {
@@ -76,6 +80,7 @@ export function GravityClient({
   const wsFullUrl = `${config.wsUrl}${WS_ENDPOINTS.GRAVITY_DS}`;
   const { isConnected, isReady, events, sendComponentReady, sendUserAction } = useGravityWebSocket(session, wsFullUrl, {
     getAccessToken: config.getAccessToken,
+    apiUrl: config.apiUrl,
   });
 
   // Component loader
@@ -95,6 +100,24 @@ export function GravityClient({
       onReady?.({ historyManager, sendUserAction, sessionParams: session });
     }
   }, [isReady]);
+
+  // Get emitAction from Zustand store
+  const emitAction = useAIContext((s) => s.emitAction);
+
+  // Listen for CustomEvents from streamed components (cross-boundary communication)
+  useEffect(() => {
+    console.log("[GravityClient] Setting up gravity:action listener");
+    const handleGravityAction = (e: Event) => {
+      const { type, data, componentId } = (e as CustomEvent).detail || {};
+      console.log("[GravityClient] Received gravity:action", { type, componentId, data });
+      if (type) {
+        emitAction(type, data, componentId);
+        onAction?.(type, data);
+      }
+    };
+    window.addEventListener("gravity:action", handleGravityAction);
+    return () => window.removeEventListener("gravity:action", handleGravityAction);
+  }, [emitAction, onAction]);
 
   // Build client context
   const clientContext: ClientContext = useMemo(

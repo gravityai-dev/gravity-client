@@ -6,6 +6,16 @@ import type { StreamingState, WorkflowState } from "../../core/types";
  * Components can read/write to this shared context
  */
 
+/**
+ * Component Action - emitted by streamed components, consumed by client apps
+ */
+export interface ComponentAction {
+  type: string;
+  data: any;
+  timestamp: number;
+  componentId?: string;
+}
+
 interface AIContextState {
   // Identity
   userId: string | null;
@@ -27,6 +37,9 @@ interface AIContextState {
   // Configuration
   apiBaseUrl: string;
 
+  // Component Actions - universal event bus for component-to-client communication
+  lastAction: ComponentAction | null;
+
   // Actions
   initContext: (context: {
     userId?: string;
@@ -37,6 +50,7 @@ interface AIContextState {
   updateSessionData: (updates: Record<string, any>) => void;
   setStreamingState: (streamingState: StreamingState, componentName?: string | null) => void;
   setWorkflowState: (state: WorkflowState, workflowId?: string | null, workflowRunId?: string | null) => void;
+  emitAction: (type: string, data: any, componentId?: string) => void;
   clearContext: () => void;
 }
 
@@ -52,6 +66,7 @@ export const useAIContext = create<AIContextState>((set) => ({
   workflowId: null,
   workflowRunId: null,
   apiBaseUrl: "",
+  lastAction: null,
 
   // Actions
   initContext: (context) => {
@@ -101,6 +116,17 @@ export const useAIContext = create<AIContextState>((set) => ({
     set(updates);
   },
 
+  emitAction: (type, data, componentId) => {
+    set({
+      lastAction: {
+        type,
+        data,
+        timestamp: Date.now(),
+        componentId,
+      },
+    });
+  },
+
   clearContext: () => {
     set({
       userId: null,
@@ -112,6 +138,7 @@ export const useAIContext = create<AIContextState>((set) => ({
       workflowState: null,
       workflowId: null,
       workflowRunId: null,
+      lastAction: null,
     });
   },
 }));

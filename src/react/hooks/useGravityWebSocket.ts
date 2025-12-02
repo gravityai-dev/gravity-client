@@ -17,6 +17,8 @@ type WebSocketEvent = ServerMessage & {
 interface UseGravityWebSocketOptions {
   /** Function to get access token for JWT auth */
   getAccessToken?: () => Promise<string | null>;
+  /** API URL for GraphQL mutations (required for send_message) */
+  apiUrl?: string;
 }
 
 interface UseGravityWebSocketReturn {
@@ -36,7 +38,7 @@ export function useGravityWebSocket(
   wsUrl: string,
   options: UseGravityWebSocketOptions = {}
 ): UseGravityWebSocketReturn {
-  const { getAccessToken } = options;
+  const { getAccessToken, apiUrl } = options;
   const { conversationId, userId } = sessionParams;
   const { initComponent, updateComponentData, removeComponent } = useComponentData();
   const { setWorkflowState } = useAIContext();
@@ -207,33 +209,88 @@ export function useGravityWebSocket(
   }, []);
 
   const sendUserAction = useCallback(
-    (action: string, data: Record<string, any>) => {
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        // Optimistically set workflow state to STARTED when sending a message
-        if (action === "send_message") {
-          setWorkflowState("WORKFLOW_STARTED", data.workflowId, null);
+    async (action: string, data: Record<string, any>) => {
+      // For send_message, use GraphQL to ensure auth token is passed
+      if (action === "send_message") {
+        setWorkflowState("WORKFLOW_STARTED", data.workflowId, null);
 
-          // If chatId is provided in data, include component state from Zustand
-          if (data.chatId) {
-            const store = useComponentData.getState();
+        // If chatId is provided in data, include component state from Zustand
+        if (data.chatId) {
+          const store = useComponentData.getState();
 
-            // Filter all components for this chatId
-            const componentState = Object.entries(store.data)
-              .filter(([key]) => key.startsWith(`${data.chatId}:`))
-              .reduce((acc, [key, value]) => {
-                const nodeId = key.split(":")[1];
-                acc[nodeId] = value;
-                return acc;
-              }, {} as Record<string, any>);
+          // Filter all components for this chatId
+          const componentState = Object.entries(store.data)
+            .filter(([key]) => key.startsWith(`${data.chatId}:`))
+            .reduce((acc, [key, value]) => {
+              const nodeId = key.split(":")[1];
+              acc[nodeId] = value;
+              return acc;
+            }, {} as Record<string, any>);
 
-            // Add componentState to data if any components exist
-            if (Object.keys(componentState).length > 0) {
-              data.componentState = componentState;
-              console.log("[WS] 📦 Including component state:", componentState);
-            }
+          // Add componentState to data if any components exist
+          if (Object.keys(componentState).length > 0) {
+            data.componentState = componentState;
+            console.log("[GraphQL] 📦 Including component state:", componentState);
           }
         }
 
+        // Use GraphQL mutation with JWT auth
+        try {
+          const token = getAccessToken ? await getAccessToken() : null;
+          const headers: Record<string, string> = {
+            "Content-Type": "application/json",
+          };
+          if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+          }
+
+          const mutation = `
+            mutation ExecuteWorkflow($id: ID!, $input: JSON!, $mode: ExecutionMode) {
+              executeWorkflow(id: $id, input: $input, mode: $mode) {
+                executionId
+                status
+              }
+            }
+          `;
+
+          const response = await fetch(`${apiUrl}/graphql`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              query: mutation,
+              variables: {
+                id: data.workflowId,
+                input: {
+                  message: data.message,
+                  chatId: data.chatId,
+                  conversationId: data.conversationId || conversationId,
+                  userId: data.userId || userId,
+                  providerId: data.providerId || "gravity-ds",
+                  metadata: {
+                    targetTriggerNode: data.targetTriggerNode,
+                    enableAudio: data.enableAudio || false,
+                    ...(data.componentState && { componentState: data.componentState }),
+                  },
+                },
+                mode: "PRODUCTION",
+              },
+            }),
+          });
+
+          const result = await response.json();
+          if (result.errors) {
+            console.error("[GraphQL] Execution error:", result.errors);
+          } else {
+            console.log("[GraphQL] Workflow executed:", result.data?.executeWorkflow);
+          }
+        } catch (error) {
+          console.error("[GraphQL] Failed to execute workflow:", error);
+        }
+        return;
+      }
+
+      // For other actions, use WebSocket
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(
           JSON.stringify({
             type: "USER_ACTION",
@@ -243,7 +300,7 @@ export function useGravityWebSocket(
         );
       }
     },
-    [setWorkflowState]
+    [setWorkflowState, getAccessToken, apiUrl, conversationId, userId]
   );
 
   return {
