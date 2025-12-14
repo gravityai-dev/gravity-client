@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useCallback } from "react";
+import React, { useEffect, useMemo, useCallback, useState } from "react";
 import { useGravityWebSocket } from "../hooks/useGravityWebSocket";
 import { useComponentLoader } from "../hooks/useComponentLoader";
 import { useHistoryManager } from "../hooks/useHistoryManager";
@@ -23,12 +23,14 @@ interface ClientContext {
   loadTemplate: (targetTriggerNode: string, options?: { chatId?: string }) => void;
   /** Send an agent message through server pipeline (for live agent, Amazon Connect, etc.) */
   sendAgentMessage: (data: {
-    content: string;
     chatId: string;
     agentName?: string;
     source?: string;
-    props?: Record<string, any>;
-    metadata?: Record<string, any>;
+    components: Array<{
+      type: string;
+      props: Record<string, any>;
+      metadata?: Record<string, any>;
+    }>;
   }) => void;
   /** Emit a custom action event (for cross-boundary communication) */
   emitAction: (type: string, data: any) => void;
@@ -99,6 +101,9 @@ export function GravityClient({
   LoadingComponent,
   children,
 }: GravityClientProps): JSX.Element {
+  // Track current targetTriggerNode - updates when loadTemplate is called
+  const [currentTargetTriggerNode, setCurrentTargetTriggerNode] = useState(session.targetTriggerNode);
+
   // WebSocket connection - build full URL from base
   const wsFullUrl = `${config.wsUrl}${WS_ENDPOINTS.GRAVITY}`;
   // Audio playback ref for receiving audio from server
@@ -160,20 +165,22 @@ export function GravityClient({
   }, [zustandEmitAction, onAction]);
 
   // Helper to send a message (adds to history + triggers workflow)
+  // Uses currentTargetTriggerNode which updates when loadTemplate is called
   const sendMessage = useCallback(
     (message: string, options?: { targetTriggerNode?: string }) => {
+      const effectiveTargetTriggerNode = options?.targetTriggerNode || currentTargetTriggerNode;
       const userEntry = historyManager.addUserMessage(message, {
         workflowId: session.workflowId,
-        targetTriggerNode: options?.targetTriggerNode || session.targetTriggerNode,
+        targetTriggerNode: effectiveTargetTriggerNode,
       });
       sendUserAction("send_message", {
         message,
         chatId: userEntry.chatId,
         workflowId: session.workflowId,
-        targetTriggerNode: options?.targetTriggerNode || session.targetTriggerNode,
+        targetTriggerNode: effectiveTargetTriggerNode,
       });
     },
-    [historyManager, sendUserAction, session]
+    [historyManager, sendUserAction, session.workflowId, currentTargetTriggerNode]
   );
 
   // Helper to emit action (for cross-boundary communication from templates)
@@ -185,23 +192,34 @@ export function GravityClient({
     );
   }, []);
 
+  // Get setStreamingState from AI context to reset streaming when switching templates
+  const setStreamingState = useAIContext((state) => state.setStreamingState);
+
   // Helper to load template without sending a message
+  // IMPORTANT: Also updates the current targetTriggerNode so subsequent messages go to the right trigger
+  // Also resets streaming state to prevent "Thinking..." from showing on the new template
   const loadTemplate = useCallback(
     (targetTriggerNode: string, options?: { chatId?: string }) => {
+      console.log("[GravityClient] loadTemplate called, updating targetTriggerNode:", targetTriggerNode);
+      setCurrentTargetTriggerNode(targetTriggerNode);
+      // Reset streaming state when switching templates to prevent stale "Thinking..." state
+      setStreamingState("idle");
       wsLoadTemplate(targetTriggerNode, options);
     },
-    [wsLoadTemplate]
+    [wsLoadTemplate, setStreamingState]
   );
 
   // Helper to send agent messages through server pipeline
   const sendAgentMessage = useCallback(
     (data: {
-      content: string;
       chatId: string;
       agentName?: string;
       source?: string;
-      props?: Record<string, any>;
-      metadata?: Record<string, any>;
+      components: Array<{
+        type: string;
+        props: Record<string, any>;
+        metadata?: Record<string, any>;
+      }>;
     }) => {
       wsSendAgentMessage(data);
     },
@@ -227,9 +245,21 @@ export function GravityClient({
         entries: historyManager.history,
         getResponses: historyManager.getResponses,
       },
-      session,
+      session: {
+        ...session,
+        targetTriggerNode: currentTargetTriggerNode,
+      },
     }),
-    [historyManager, sendMessage, loadTemplate, sendAgentMessage, wsSendVoiceCallMessage, emitAction, session]
+    [
+      historyManager,
+      sendMessage,
+      loadTemplate,
+      sendAgentMessage,
+      wsSendVoiceCallMessage,
+      emitAction,
+      session,
+      currentTargetTriggerNode,
+    ]
   );
 
   // If children render prop provided, use it
@@ -259,7 +289,7 @@ export function GravityClient({
           sendUserAction={sendUserAction}
           sendAgentMessage={sendAgentMessage}
           sendVoiceCallMessage={wsSendVoiceCallMessage}
-          sessionParams={session}
+          sessionParams={{ ...session, targetTriggerNode: currentTargetTriggerNode }}
           wsUrl={config.wsUrl}
           templateProps={templateProps}
           onStateChange={onStateChange}

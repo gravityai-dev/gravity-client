@@ -18,12 +18,14 @@ export interface ClientContext {
   sendMessage: (message: string, options?: { targetTriggerNode?: string }) => void;
   /** Send an agent message through server pipeline (for live agent, Amazon Connect, etc.) */
   sendAgentMessage: (data: {
-    content: string;
     chatId: string;
     agentName?: string;
     source?: string;
-    props?: Record<string, any>;
-    metadata?: Record<string, any>;
+    components: Array<{
+      type: string;
+      props: Record<string, any>;
+      metadata?: Record<string, any>;
+    }>;
   }) => void;
   /** Send a voice call control message (START_CALL or END_CALL) */
   sendVoiceCallMessage?: (data: {
@@ -58,12 +60,14 @@ export interface TemplateRendererProps {
   sendUserAction: (action: string, data: Record<string, any>) => void;
   /** Send agent message through server pipeline */
   sendAgentMessage: (data: {
-    content: string;
     chatId: string;
     agentName?: string;
     source?: string;
-    props?: Record<string, any>;
-    metadata?: Record<string, any>;
+    components: Array<{
+      type: string;
+      props: Record<string, any>;
+      metadata?: Record<string, any>;
+    }>;
   }) => void;
   /** Send voice call message (START_CALL or END_CALL) */
   sendVoiceCallMessage?: (data: {

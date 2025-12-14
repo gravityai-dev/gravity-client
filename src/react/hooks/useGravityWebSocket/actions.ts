@@ -207,19 +207,24 @@ export async function sendVoiceCallMessage(
 // AGENT MESSAGE
 // =============================================================================
 
+export interface AgentMessageComponent {
+  /** Component type (e.g., "AIResponse", "ListPicker") */
+  type: string;
+  /** Component props */
+  props: Record<string, any>;
+  /** Component metadata */
+  metadata?: Record<string, any>;
+}
+
 export interface AgentMessageData {
-  /** Message content */
-  content: string;
   /** Chat ID to associate with (for conversation continuity) */
   chatId: string;
   /** Agent display name */
   agentName?: string;
   /** Source identifier */
   source?: string;
-  /** Additional component props (e.g., interactiveData for ListPicker) */
-  props?: Record<string, any>;
-  /** Additional metadata */
-  metadata?: Record<string, any>;
+  /** Components to render (generic - any design-system component) */
+  components: AgentMessageComponent[];
 }
 
 /**

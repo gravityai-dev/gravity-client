@@ -46,12 +46,14 @@ export interface UseGravityWebSocketReturn {
   loadTemplate: (targetTriggerNode: string, options?: { chatId?: string }) => void;
   /** Send an agent message through the server pipeline */
   sendAgentMessage: (data: {
-    content: string;
     chatId: string;
     agentName?: string;
     source?: string;
-    props?: Record<string, any>;
-    metadata?: Record<string, any>;
+    components: Array<{
+      type: string;
+      props: Record<string, any>;
+      metadata?: Record<string, any>;
+    }>;
   }) => void;
   /** Send a voice call control message (START_CALL or END_CALL) */
   sendVoiceCallMessage: (data: {
