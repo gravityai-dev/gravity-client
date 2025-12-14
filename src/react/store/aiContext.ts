@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { StreamingState, WorkflowState } from "../../core/types";
+import type { AudioState } from "../../realtime/types";
 
 /**
  * AI Context Store - Shared state for all streamed components
@@ -15,6 +16,11 @@ export interface ComponentAction {
   timestamp: number;
   componentId?: string;
 }
+
+/**
+ * Audio/Voice call state
+ */
+export type CallStatus = "idle" | "connecting" | "connected" | "ended" | "error";
 
 interface AIContextState {
   // Identity
@@ -34,6 +40,12 @@ interface AIContextState {
   workflowId: string | null;
   workflowRunId: string | null;
 
+  // Audio/Voice state
+  audioState: AudioState | null;
+  callStatus: CallStatus;
+  isAssistantSpeaking: boolean;
+  isUserSpeaking: boolean;
+
   // Configuration
   apiBaseUrl: string;
 
@@ -50,6 +62,10 @@ interface AIContextState {
   updateSessionData: (updates: Record<string, any>) => void;
   setStreamingState: (streamingState: StreamingState, componentName?: string | null) => void;
   setWorkflowState: (state: WorkflowState, workflowId?: string | null, workflowRunId?: string | null) => void;
+  setAudioState: (audioState: AudioState | null) => void;
+  setCallStatus: (callStatus: CallStatus) => void;
+  setAssistantSpeaking: (isSpeaking: boolean) => void;
+  setUserSpeaking: (isSpeaking: boolean) => void;
   emitAction: (type: string, data: any, componentId?: string) => void;
   clearContext: () => void;
 }
@@ -65,6 +81,10 @@ export const useAIContext = create<AIContextState>((set) => ({
   workflowState: null,
   workflowId: null,
   workflowRunId: null,
+  audioState: null,
+  callStatus: "idle",
+  isAssistantSpeaking: false,
+  isUserSpeaking: false,
   apiBaseUrl: "",
   lastAction: null,
 
@@ -116,6 +136,35 @@ export const useAIContext = create<AIContextState>((set) => ({
     set(updates);
   },
 
+  setAudioState: (audioState) => {
+    const updates: Partial<AIContextState> = { audioState };
+    // Auto-update speaking states based on audio state
+    if (audioState === "SPEECH_STARTED") {
+      updates.isAssistantSpeaking = true;
+    } else if (audioState === "SPEECH_ENDED") {
+      updates.isAssistantSpeaking = false;
+    } else if (audioState === "SESSION_READY") {
+      updates.callStatus = "connected";
+    } else if (audioState === "SESSION_ENDED") {
+      updates.callStatus = "ended";
+      updates.isAssistantSpeaking = false;
+      updates.isUserSpeaking = false;
+    }
+    set(updates);
+  },
+
+  setCallStatus: (callStatus) => {
+    set({ callStatus });
+  },
+
+  setAssistantSpeaking: (isSpeaking) => {
+    set({ isAssistantSpeaking: isSpeaking });
+  },
+
+  setUserSpeaking: (isSpeaking) => {
+    set({ isUserSpeaking: isSpeaking });
+  },
+
   emitAction: (type, data, componentId) => {
     set({
       lastAction: {
@@ -138,6 +187,10 @@ export const useAIContext = create<AIContextState>((set) => ({
       workflowState: null,
       workflowId: null,
       workflowRunId: null,
+      audioState: null,
+      callStatus: "idle",
+      isAssistantSpeaking: false,
+      isUserSpeaking: false,
       lastAction: null,
     });
   },

@@ -152,6 +152,14 @@ export class HistoryManager {
       Component: loadedComponent,
     };
 
+    console.log("[HistoryManager] Adding component:", {
+      id: component.id,
+      componentType: component.componentType,
+      hasComponent: !!component.Component,
+      componentType2: typeof component.Component,
+      responseId,
+    });
+
     response.components.push(component);
     this.emit("update", response);
     this.emit("change", this.history);

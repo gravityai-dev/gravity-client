@@ -78,10 +78,12 @@ export class ShadowDOMWrapper extends React.Component<ShadowDOMWrapperProps, Sha
       this.shadowRoot = this.containerRef.current.attachShadow({ mode: "open" });
 
       // Create container for React inside Shadow DOM
+      // Use flex: 1 instead of height: 100% to work in flex parent context
       const reactContainer = document.createElement("div");
       reactContainer.className = "gravity-component";
       reactContainer.style.width = "100%";
-      reactContainer.style.height = "100%";
+      reactContainer.style.flex = "1";
+      reactContainer.style.minHeight = "0";
       reactContainer.style.display = "flex";
       reactContainer.style.flexDirection = "column";
       this.shadowRoot.appendChild(reactContainer);
@@ -122,14 +124,15 @@ export class ShadowDOMWrapper extends React.Component<ShadowDOMWrapperProps, Sha
 
   render(): React.ReactNode {
     const { className = "" } = this.props;
+    const isLayout = className.includes("layout");
 
-    return (
-      <div
-        ref={this.containerRef}
-        className={className}
-        style={{ width: "100%", height: "100%", minHeight: "200px" }}
-      />
-    );
+    // For layouts: use flex: 1 to fill available space in flex parent
+    // For components: use minHeight to ensure visibility
+    const layoutStyle = isLayout
+      ? { width: "100%", flex: 1, display: "flex", flexDirection: "column" as const, minHeight: 0 }
+      : { width: "100%", height: "100%", minHeight: "200px" };
+
+    return <div ref={this.containerRef} className={className} style={layoutStyle} />;
   }
 }
 

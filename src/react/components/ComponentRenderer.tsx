@@ -51,6 +51,13 @@ export function ComponentRenderer({ component, onAction }: ComponentRendererProp
     ...storeData,
   };
 
+  // Debug: log props being passed to component
+  console.log(`[ComponentRenderer] ${name} props:`, {
+    hasClient: !!mergedProps.client,
+    hasAmazonConnectConfig: !!mergedProps.amazonConnectConfig,
+    propKeys: Object.keys(mergedProps),
+  });
+
   // Enhance props with generic action handlers AND workflow state
   const enhancedProps = {
     ...mergedProps,
@@ -87,7 +94,7 @@ export function ComponentRenderer({ component, onAction }: ComponentRendererProp
   // Layout templates (ChatLayout, etc.) should fill available space
   const isLayout = name.includes("Layout");
   const containerStyle: React.CSSProperties = isLayout
-    ? { width: "100%", flex: 1, display: "flex", flexDirection: "column" }
+    ? { width: "100%", height: "100%", flex: 1, display: "flex", flexDirection: "column" }
     : { width: "100%", height: "100%", minHeight: "200px" };
 
   // Use ShadowDOMWrapper with ErrorBoundary

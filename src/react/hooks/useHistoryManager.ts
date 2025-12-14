@@ -243,11 +243,18 @@ export function useHistoryManager(
           return;
         }
 
-        console.log("[History] Adding workflow component:", component.type, nodeId);
+        console.log("[History] 📦 Loading component:", component.type, component.componentUrl);
 
         // Load component and wrap with Zustand data HOC
         if (loadComponent) {
           const LoadedComponent = await loadComponent(component.componentUrl, component.type);
+
+          if (!LoadedComponent) {
+            console.error("[History] ❌ Failed to load component:", component.type);
+            return;
+          }
+
+          console.log("[History] ✅ Component loaded:", component.type, typeof LoadedComponent);
 
           // Wrap component with Zustand data HOC if provided
           const WrappedComponent = withZustandData ? withZustandData(LoadedComponent) : LoadedComponent;
@@ -268,12 +275,14 @@ export function useHistoryManager(
               WrappedComponent
             );
 
-            console.log("[History] Component added to response:", component.type, responseId);
+            console.log("[History] ✅ Component added to response:", component.type, responseId);
           } else {
-            console.warn("[History] No active response for chatId:", chatId);
+            console.warn("[History] ⚠️ No active response for chatId:", chatId);
           }
 
           sendComponentReady?.(component.type, event.id || "");
+        } else {
+          console.error("[History] ❌ loadComponent function not available");
         }
         return;
       }

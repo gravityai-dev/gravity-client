@@ -74,6 +74,30 @@ export {
 
 // WebSocket endpoint paths
 export const WS_ENDPOINTS = {
-  GRAVITY_DS: "/ws/gravity-ds",
-  AUDIO: "/ws/audio", // Append /:sessionId when connecting
+  GRAVITY: "/ws/gravity", // Unified endpoint for UI + audio
+  GRAVITY_DS: "/ws/gravity-ds", // Deprecated - use GRAVITY
+  AUDIO: "/ws/audio", // Deprecated - use GRAVITY
 } as const;
+
+// Realtime Audio Utilities
+export {
+  useRealtimeWebSocket,
+  useAudioCapture,
+  useAudioPlayback,
+  type UseRealtimeWebSocketOptions,
+  type UseRealtimeWebSocketReturn,
+  type AudioStateEvent,
+  type UseAudioCaptureOptions,
+  type UseAudioCaptureReturn,
+  type UseAudioPlaybackOptions,
+  type UseAudioPlaybackReturn,
+} from "./realtime";
+
+export {
+  float32ToInt16,
+  int16ToArrayBuffer,
+  arrayBufferToBase64,
+  base64ToArrayBuffer,
+  addSilencePadding,
+  calculateDuration,
+} from "./realtime/audioUtils";

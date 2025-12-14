@@ -1,6 +1,6 @@
 {
   "name": "@gravityai-dev/gravity-client",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "React SDK for Gravity AI - The experience layer for AI",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -20,6 +20,11 @@
       "types": "./dist/react/index.d.ts",
       "import": "./dist/react/index.mjs",
       "require": "./dist/react/index.js"
+    },
+    "./realtime": {
+      "types": "./dist/realtime/index.d.ts",
+      "import": "./dist/realtime/index.mjs",
+      "require": "./dist/realtime/index.js"
     }
   },
   "files": [
@@ -45,7 +50,8 @@
   "dependencies": {
     "oidc-client-ts": "^3.4.1",
     "react-oidc-context": "^3.3.0",
-    "zustand": "^4.4.0"
+    "zustand": "^4.4.0",
+    "@ricky0123/vad-web": "^0.0.27"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",
