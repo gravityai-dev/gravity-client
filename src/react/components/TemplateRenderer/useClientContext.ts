@@ -13,9 +13,10 @@
 
 import { useMemo, useCallback } from "react";
 import type { HistoryManager, HistoryEntry } from "../../../core/HistoryManager";
-import type { SessionParams } from "../../../core/types";
+import type { SessionParams, Suggestions } from "../../../core/types";
 import type { AudioContext } from "../../../realtime/types";
 import type { ClientContext } from "./types";
+import { useAIContext } from "../../store/aiContext";
 
 interface UseClientContextOptions {
   history: HistoryEntry[];
@@ -55,9 +56,16 @@ export function useClientContext({
   wsUrl,
   audioContext,
 }: UseClientContextOptions): ClientContext {
+  // Get suggestions from Zustand store (reactive)
+  const suggestions = useAIContext((s) => s.suggestions);
+  const clearSuggestions = useAIContext((s) => s.clearSuggestions);
+
   // Helper to send a message (adds to history + triggers workflow)
   const sendMessage = useCallback(
     (message: string, options?: { targetTriggerNode?: string }) => {
+      // Clear suggestions when user sends a new message
+      clearSuggestions();
+
       const userEntry = historyManager.addUserMessage(message, {
         workflowId: sessionParams.workflowId,
         targetTriggerNode: options?.targetTriggerNode || sessionParams.targetTriggerNode,
@@ -69,7 +77,7 @@ export function useClientContext({
         targetTriggerNode: options?.targetTriggerNode || sessionParams.targetTriggerNode,
       });
     },
-    [historyManager, sendUserAction, sessionParams]
+    [historyManager, sendUserAction, sessionParams, clearSuggestions]
   );
 
   // Helper to emit action (for cross-boundary communication from templates)
@@ -93,6 +101,7 @@ export function useClientContext({
         getResponses: historyManager.getResponses.bind(historyManager),
       },
       session: sessionParams,
+      suggestions,
       wsUrl,
       audio: audioContext,
     };
@@ -104,6 +113,7 @@ export function useClientContext({
     sendVoiceCallMessage,
     emitAction,
     sessionParams,
+    suggestions,
     wsUrl,
     audioContext,
   ]);

@@ -3,7 +3,7 @@
  */
 
 import type { HistoryManager, HistoryEntry } from "../../../core/HistoryManager";
-import type { SessionParams } from "../../../core/types";
+import type { SessionParams, Suggestions } from "../../../core/types";
 import type { AudioContext } from "../../../realtime/types";
 
 export interface TemplateInfo {
@@ -46,6 +46,8 @@ export interface ClientContext {
   };
   /** Session context */
   session: SessionParams;
+  /** Suggestions from workflow (FAQs, Actions, Recommendations) */
+  suggestions?: Suggestions;
   /** WebSocket URL for audio connections */
   wsUrl?: string;
   /** Audio utilities for voice calls */

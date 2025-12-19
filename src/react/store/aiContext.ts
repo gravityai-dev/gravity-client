@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { StreamingState, WorkflowState } from "../../core/types";
+import type { StreamingState, WorkflowState, Suggestions } from "../../core/types";
 import type { AudioState } from "../../realtime/types";
 
 /**
@@ -49,6 +49,9 @@ interface AIContextState {
   // Configuration
   apiBaseUrl: string;
 
+  // Suggestions - FAQs, Actions, Recommendations from workflow
+  suggestions: Suggestions;
+
   // Component Actions - universal event bus for component-to-client communication
   lastAction: ComponentAction | null;
 
@@ -67,6 +70,8 @@ interface AIContextState {
   setAssistantSpeaking: (isSpeaking: boolean) => void;
   setUserSpeaking: (isSpeaking: boolean) => void;
   emitAction: (type: string, data: any, componentId?: string) => void;
+  setSuggestions: (suggestions: Suggestions) => void;
+  clearSuggestions: () => void;
   clearContext: () => void;
 }
 
@@ -86,6 +91,7 @@ export const useAIContext = create<AIContextState>((set) => ({
   isAssistantSpeaking: false,
   isUserSpeaking: false,
   apiBaseUrl: "",
+  suggestions: { faqs: [], actions: [], recommendations: [] },
   lastAction: null,
 
   // Actions
@@ -176,6 +182,14 @@ export const useAIContext = create<AIContextState>((set) => ({
     });
   },
 
+  setSuggestions: (suggestions) => {
+    set({ suggestions });
+  },
+
+  clearSuggestions: () => {
+    set({ suggestions: { faqs: [], actions: [], recommendations: [] } });
+  },
+
   clearContext: () => {
     set({
       userId: null,
@@ -191,6 +205,7 @@ export const useAIContext = create<AIContextState>((set) => ({
       callStatus: "idle",
       isAssistantSpeaking: false,
       isUserSpeaking: false,
+      suggestions: { faqs: [], actions: [], recommendations: [] },
       lastAction: null,
     });
   },

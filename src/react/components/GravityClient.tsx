@@ -51,6 +51,12 @@ interface ClientContext {
   };
   /** Session context */
   session: SessionParams;
+  /** Suggestions from workflow (FAQs, Actions, Recommendations) */
+  suggestions?: {
+    faqs?: Array<{ id?: string; question: string }>;
+    actions?: Array<{ id?: string; label: string; description?: string; icon?: string }>;
+    recommendations?: Array<{ id?: string; text: string; confidence?: number; actionLabel?: string }>;
+  };
 }
 
 interface GravityClientProps {
@@ -146,8 +152,9 @@ export function GravityClient({
     withZustandData,
   });
 
-  // Get emitAction from Zustand store
+  // Get emitAction and suggestions from Zustand store
   const zustandEmitAction = useAIContext((s) => s.emitAction);
+  const suggestions = useAIContext((s) => s.suggestions);
 
   // Listen for CustomEvents from streamed components (cross-boundary communication)
   useEffect(() => {
@@ -249,6 +256,7 @@ export function GravityClient({
         ...session,
         targetTriggerNode: currentTargetTriggerNode,
       },
+      suggestions,
     }),
     [
       historyManager,
@@ -259,6 +267,7 @@ export function GravityClient({
       emitAction,
       session,
       currentTargetTriggerNode,
+      suggestions,
     ]
   );
 

@@ -65,7 +65,8 @@ export type ServerMessageType =
   | "COMPONENT_INIT"
   | "COMPONENT_DATA"
   | "COMPONENT_REMOVE"
-  | "WORKFLOW_STATE";
+  | "WORKFLOW_STATE"
+  | "SUGGESTIONS_UPDATE";
 
 /**
  * Component initialization message
@@ -120,6 +121,25 @@ export interface WorkflowStateMessage {
 }
 
 /**
+ * Suggestions data structure
+ */
+export interface Suggestions {
+  faqs?: Array<{ id?: string; question: string }>;
+  actions?: Array<{ id?: string; label: string; icon?: string }>;
+  recommendations?: Array<{ id?: string; text: string; confidence?: number; actionLabel?: string }>;
+}
+
+/**
+ * Suggestions update message
+ */
+export interface SuggestionsUpdateMessage {
+  type: "SUGGESTIONS_UPDATE";
+  chatId?: string;
+  conversationId?: string;
+  suggestions: Suggestions;
+}
+
+/**
  * Session ready message
  */
 export interface SessionReadyMessage {
@@ -134,7 +154,8 @@ export type ServerMessage =
   | ComponentInitMessage
   | ComponentDataMessage
   | ComponentRemoveMessage
-  | WorkflowStateMessage;
+  | WorkflowStateMessage
+  | SuggestionsUpdateMessage;
 
 /**
  * User action types

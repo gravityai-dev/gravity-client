@@ -8,6 +8,7 @@ import type {
   ComponentDataMessage,
   ComponentRemoveMessage,
   WorkflowStateMessage,
+  SuggestionsUpdateMessage,
 } from "../../../core/types";
 import type { AudioState } from "../../../realtime/types";
 import type { MessageHandlerContext } from "./types";
@@ -46,6 +47,10 @@ export function handleServerMessage(data: ServerMessage, ws: WebSocket, ctx: Mes
 
     case "AUDIO_STATE":
       handleAudioState(data, ctx);
+      break;
+
+    case "SUGGESTIONS_UPDATE":
+      handleSuggestionsUpdate(data as SuggestionsUpdateMessage);
       break;
 
     default:
@@ -161,4 +166,21 @@ function handleAudioState(msg: any, ctx: MessageHandlerContext): void {
 
   // Emit as event so templates can react
   ctx.setEvents((prev) => [...prev, { ...msg, id: `audioState_${msg.state}_${Date.now()}` }]);
+}
+
+/**
+ * Suggestions update - update Zustand store with FAQs, Actions, Recommendations
+ */
+function handleSuggestionsUpdate(msg: SuggestionsUpdateMessage): void {
+  console.log(`[WS] 💡 SUGGESTIONS_UPDATE received`, {
+    faqCount: msg.suggestions?.faqs?.length || 0,
+    actionCount: msg.suggestions?.actions?.length || 0,
+    suggestions: msg.suggestions,
+  });
+
+  // Update Zustand store with suggestions
+  const { setSuggestions } = useAIContext.getState();
+  setSuggestions(msg.suggestions);
+
+  console.log(`[WS] 💡 SUGGESTIONS_UPDATE stored in Zustand`);
 }
