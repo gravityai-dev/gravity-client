@@ -60,24 +60,39 @@ export function useClientContext({
   const suggestions = useAIContext((s) => s.suggestions);
   const clearSuggestions = useAIContext((s) => s.clearSuggestions);
 
+  // Get focus state from Zustand store (reactive)
+  const focusState = useAIContext((s) => s.focusState);
+  const openFocus = useAIContext((s) => s.openFocus);
+  const closeFocus = useAIContext((s) => s.closeFocus);
+
   // Helper to send a message (adds to history + triggers workflow)
+  // Focus Mode: When focused, route to focusState.targetTriggerNode with focusState.chatId
   const sendMessage = useCallback(
-    (message: string, options?: { targetTriggerNode?: string }) => {
+    (message: string, options?: { targetTriggerNode?: string; chatId?: string }) => {
       // Clear suggestions when user sends a new message
       clearSuggestions();
 
+      // Focus Mode routing: use focusState if active and no explicit override
+      const effectiveTargetTriggerNode =
+        options?.targetTriggerNode ||
+        (focusState?.focusedComponentId ? focusState.targetTriggerNode : null) ||
+        sessionParams.targetTriggerNode;
+
+      const effectiveChatId = options?.chatId || (focusState?.focusedComponentId ? focusState.chatId : null);
+
       const userEntry = historyManager.addUserMessage(message, {
         workflowId: sessionParams.workflowId,
-        targetTriggerNode: options?.targetTriggerNode || sessionParams.targetTriggerNode,
+        targetTriggerNode: effectiveTargetTriggerNode,
+        chatId: effectiveChatId || undefined,
       });
       sendUserAction("send_message", {
         message,
-        chatId: userEntry.chatId,
+        chatId: effectiveChatId || userEntry.chatId,
         workflowId: sessionParams.workflowId,
-        targetTriggerNode: options?.targetTriggerNode || sessionParams.targetTriggerNode,
+        targetTriggerNode: effectiveTargetTriggerNode,
       });
     },
-    [historyManager, sendUserAction, sessionParams, clearSuggestions]
+    [historyManager, sendUserAction, sessionParams, clearSuggestions, focusState]
   );
 
   // Helper to emit action (for cross-boundary communication from templates)
@@ -104,6 +119,10 @@ export function useClientContext({
       suggestions,
       wsUrl,
       audio: audioContext,
+      // Focus Mode - universal for all templates
+      focusState,
+      openFocus,
+      closeFocus,
     };
   }, [
     history,
@@ -116,6 +135,9 @@ export function useClientContext({
     suggestions,
     wsUrl,
     audioContext,
+    focusState,
+    openFocus,
+    closeFocus,
   ]);
 
   return clientContext;

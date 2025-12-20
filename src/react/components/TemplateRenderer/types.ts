@@ -13,9 +13,19 @@ export interface TemplateInfo {
   props: Record<string, any>;
 }
 
+/** Focus state for component-centric conversations */
+export interface FocusState {
+  /** ID of the focused component (matches component.id in history) */
+  focusedComponentId: string | null;
+  /** Target trigger node for routing messages when focused */
+  targetTriggerNode: string | null;
+  /** Chat ID to use when focused (same chatId = update existing component) */
+  chatId: string | null;
+}
+
 export interface ClientContext {
   /** Send a message to the workflow - handles history + server communication */
-  sendMessage: (message: string, options?: { targetTriggerNode?: string }) => void;
+  sendMessage: (message: string, options?: { targetTriggerNode?: string; chatId?: string }) => void;
   /** Send an agent message through server pipeline (for live agent, Amazon Connect, etc.) */
   sendAgentMessage: (data: {
     chatId: string;
@@ -52,6 +62,12 @@ export interface ClientContext {
   wsUrl?: string;
   /** Audio utilities for voice calls */
   audio?: AudioContext;
+  /** Focus state for component-centric conversations */
+  focusState?: FocusState;
+  /** Open focus mode for a component */
+  openFocus?: (componentId: string, targetTriggerNode: string | null, chatId: string | null) => void;
+  /** Close focus mode */
+  closeFocus?: () => void;
 }
 
 export interface TemplateRendererProps {

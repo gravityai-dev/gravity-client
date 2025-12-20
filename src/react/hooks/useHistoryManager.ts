@@ -33,6 +33,12 @@ interface UseHistoryManagerOptions {
   sendComponentReady?: (componentName: string, messageId: string) => void;
   events?: HistoryEvent[];
   withZustandData?: (Component: any) => any;
+  /** Callback to auto-focus focusable components on load */
+  openFocus?: (componentId: string, targetTriggerNode: string | null, chatId: string | null) => void;
+  /** Callback to set component data in Zustand (for COMPONENT_INIT) */
+  setComponentData?: (key: string, data: Record<string, any>) => void;
+  /** Callback to update component data in Zustand (for COMPONENT_DATA) */
+  updateComponentData?: (key: string, updates: Record<string, any>) => void;
 }
 
 interface UseHistoryManagerReturn {
@@ -68,7 +74,15 @@ export function useHistoryManager(
   sessionParams: SessionParams,
   options: UseHistoryManagerOptions = {}
 ): UseHistoryManagerReturn {
-  const { loadComponent, sendComponentReady, events, withZustandData } = options;
+  const {
+    loadComponent,
+    sendComponentReady,
+    events,
+    withZustandData,
+    openFocus,
+    setComponentData,
+    updateComponentData,
+  } = options;
 
   const managerRef = useRef<HistoryManager | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -262,7 +276,7 @@ export function useHistoryManager(
           // Find the active response for this chatId
           const responseId = activeResponsesRef.current[chatId];
           if (responseId) {
-            manager.addComponentToResponse(
+            const updatedResponse = manager.addComponentToResponse(
               responseId,
               {
                 type: component.type,
@@ -276,6 +290,24 @@ export function useHistoryManager(
             );
 
             console.log("[History] ✅ Component added to response:", component.type, responseId);
+
+            // Write component data to Zustand (keyed by chatId_nodeId)
+            if (setComponentData && component.props) {
+              const stateKey = `${chatId}_${nodeId}`;
+              console.log("[History] 📝 Setting component data in Zustand:", stateKey);
+              setComponentData(stateKey, component.props);
+            }
+
+            // Auto-focus focusable components on load
+            if (component.props?.focusable === true && openFocus && updatedResponse) {
+              // Get the component ID from the last added component in the response
+              const addedComponent = updatedResponse.components[updatedResponse.components.length - 1];
+              const targetTriggerNode = component.metadata?.targetTriggerNode || null;
+              console.log("[History] 🎯 Auto-focusing component:", component.type, addedComponent?.id);
+              if (addedComponent?.id) {
+                openFocus(addedComponent.id, targetTriggerNode, chatId);
+              }
+            }
           } else {
             console.warn("[History] ⚠️ No active response for chatId:", chatId);
           }
@@ -287,7 +319,7 @@ export function useHistoryManager(
         return;
       }
     },
-    [loadComponent, sendComponentReady, withZustandData, manager]
+    [loadComponent, sendComponentReady, withZustandData, manager, openFocus, setComponentData, updateComponentData]
   );
 
   // Process queue sequentially

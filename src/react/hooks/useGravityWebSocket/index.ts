@@ -14,6 +14,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useComponentData } from "../../store/componentData";
+// Note: COMPONENT_DATA updates now go to aiContext store for unified state management
 import { useAIContext } from "../../store/aiContext";
 import type { SessionParams, ServerMessage } from "../../../core/types";
 import type { WebSocketEvent, UseGravityWebSocketOptions, UseGravityWebSocketReturn } from "./types";
@@ -45,8 +46,16 @@ export function useGravityWebSocket(
   const { conversationId, userId } = sessionParams;
 
   // Zustand stores
-  const { initComponent, updateComponentData, removeComponent } = useComponentData();
+  const { initComponent, removeComponent } = useComponentData();
+  // Use aiContext for component data updates (unified state management)
+  const aiContextUpdateComponentData = useAIContext((s) => s.updateComponentData);
   const { setWorkflowState } = useAIContext();
+
+  // Wrapper to update component data in aiContext store with correct key format
+  const updateComponentData = (chatId: string, nodeId: string, data: Record<string, any>) => {
+    const key = `${chatId}_${nodeId}`;
+    aiContextUpdateComponentData(key, data);
+  };
 
   // Connection state
   const [isConnected, setIsConnected] = useState(false);

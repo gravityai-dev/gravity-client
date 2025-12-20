@@ -18,6 +18,19 @@ export interface ComponentAction {
 }
 
 /**
+ * Focus State - for component-centric conversations
+ * When a component is focused, messages route to its trigger and update it in place
+ */
+export interface FocusState {
+  /** ID of the focused component (matches component.id in history) */
+  focusedComponentId: string | null;
+  /** Target trigger node for routing messages when focused */
+  targetTriggerNode: string | null;
+  /** Chat ID to use when focused (same chatId = update existing component) */
+  chatId: string | null;
+}
+
+/**
  * Audio/Voice call state
  */
 export type CallStatus = "idle" | "connecting" | "connected" | "ended" | "error";
@@ -55,6 +68,13 @@ interface AIContextState {
   // Component Actions - universal event bus for component-to-client communication
   lastAction: ComponentAction | null;
 
+  // Focus Mode - for component-centric conversations
+  focusState: FocusState;
+
+  // Component Data - universal state for ALL Design System components
+  // Keyed by `${chatId}_${nodeId}` to support multiple instances
+  componentData: Record<string, Record<string, any>>;
+
   // Actions
   initContext: (context: {
     userId?: string;
@@ -73,6 +93,18 @@ interface AIContextState {
   setSuggestions: (suggestions: Suggestions) => void;
   clearSuggestions: () => void;
   clearContext: () => void;
+  /** Open focus mode for a component */
+  openFocus: (componentId: string, targetTriggerNode: string | null, chatId: string | null) => void;
+  /** Close focus mode */
+  closeFocus: () => void;
+
+  // Component Data Actions
+  /** Set component data (for COMPONENT_INIT) */
+  setComponentData: (key: string, data: Record<string, any>) => void;
+  /** Update component data (for COMPONENT_DATA or user interactions) */
+  updateComponentData: (key: string, updates: Record<string, any>) => void;
+  /** Get component data */
+  getComponentData: (key: string) => Record<string, any> | undefined;
 }
 
 export const useAIContext = create<AIContextState>((set) => ({
@@ -93,6 +125,8 @@ export const useAIContext = create<AIContextState>((set) => ({
   apiBaseUrl: "",
   suggestions: { faqs: [], actions: [], recommendations: [] },
   lastAction: null,
+  focusState: { focusedComponentId: null, targetTriggerNode: null, chatId: null },
+  componentData: {},
 
   // Actions
   initContext: (context) => {
@@ -207,6 +241,53 @@ export const useAIContext = create<AIContextState>((set) => ({
       isUserSpeaking: false,
       suggestions: { faqs: [], actions: [], recommendations: [] },
       lastAction: null,
+      focusState: { focusedComponentId: null, targetTriggerNode: null, chatId: null },
     });
+  },
+
+  openFocus: (componentId, targetTriggerNode, chatId) => {
+    set({
+      focusState: {
+        focusedComponentId: componentId,
+        targetTriggerNode,
+        chatId,
+      },
+    });
+  },
+
+  closeFocus: () => {
+    set({
+      focusState: {
+        focusedComponentId: null,
+        targetTriggerNode: null,
+        chatId: null,
+      },
+    });
+  },
+
+  // Component Data Actions
+  setComponentData: (key, data) => {
+    set((state) => ({
+      componentData: {
+        ...state.componentData,
+        [key]: data,
+      },
+    }));
+  },
+
+  updateComponentData: (key, updates) => {
+    set((state) => ({
+      componentData: {
+        ...state.componentData,
+        [key]: {
+          ...(state.componentData[key] || {}),
+          ...updates,
+        },
+      },
+    }));
+  },
+
+  getComponentData: (key) => {
+    return useAIContext.getState().componentData[key];
   },
 }));

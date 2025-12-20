@@ -51,13 +51,6 @@ export function ComponentRenderer({ component, onAction }: ComponentRendererProp
     ...storeData,
   };
 
-  // Debug: log props being passed to component
-  console.log(`[ComponentRenderer] ${name} props:`, {
-    hasClient: !!mergedProps.client,
-    hasAmazonConnectConfig: !!mergedProps.amazonConnectConfig,
-    propKeys: Object.keys(mergedProps),
-  });
-
   // Enhance props with generic action handlers AND workflow state
   const enhancedProps = {
     ...mergedProps,

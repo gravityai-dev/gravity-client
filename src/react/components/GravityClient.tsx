@@ -16,9 +16,15 @@ interface TemplateInfo {
   props: Record<string, any>;
 }
 
+interface FocusState {
+  focusedComponentId: string | null;
+  targetTriggerNode: string | null;
+  chatId: string | null;
+}
+
 interface ClientContext {
   /** Send a message to the workflow - handles history + server communication */
-  sendMessage: (message: string, options?: { targetTriggerNode?: string }) => void;
+  sendMessage: (message: string, options?: { targetTriggerNode?: string; chatId?: string }) => void;
   /** Load a template without sending a message (template switch only) */
   loadTemplate: (targetTriggerNode: string, options?: { chatId?: string }) => void;
   /** Send an agent message through server pipeline (for live agent, Amazon Connect, etc.) */
@@ -57,6 +63,12 @@ interface ClientContext {
     actions?: Array<{ id?: string; label: string; description?: string; icon?: string }>;
     recommendations?: Array<{ id?: string; text: string; confidence?: number; actionLabel?: string }>;
   };
+  /** Focus state for component-centric conversations */
+  focusState?: FocusState;
+  /** Open focus mode for a component */
+  openFocus?: (componentId: string, targetTriggerNode: string | null, chatId: string | null) => void;
+  /** Close focus mode */
+  closeFocus?: () => void;
 }
 
 interface GravityClientProps {
@@ -144,24 +156,33 @@ export function GravityClient({
   // Component loader
   const { loadComponent } = useComponentLoader(config.apiUrl);
 
-  // History manager
+  // Get Zustand actions for component data and focus
+  const zustandOpenFocus = useAIContext((s) => s.openFocus);
+  const zustandSetComponentData = useAIContext((s) => s.setComponentData);
+  const zustandUpdateComponentData = useAIContext((s) => s.updateComponentData);
+
+  // History manager - pass Zustand actions for state management
   const historyManager = useHistoryManager(session, {
     loadComponent,
     sendComponentReady,
     events: events as any,
     withZustandData,
+    openFocus: zustandOpenFocus,
+    setComponentData: zustandSetComponentData,
+    updateComponentData: zustandUpdateComponentData,
   });
 
-  // Get emitAction and suggestions from Zustand store
+  // Get emitAction, suggestions, and focus state from Zustand store
   const zustandEmitAction = useAIContext((s) => s.emitAction);
   const suggestions = useAIContext((s) => s.suggestions);
+  const focusState = useAIContext((s) => s.focusState);
+  const openFocus = useAIContext((s) => s.openFocus);
+  const closeFocus = useAIContext((s) => s.closeFocus);
 
   // Listen for CustomEvents from streamed components (cross-boundary communication)
   useEffect(() => {
-    console.log("[GravityClient] Setting up gravity:action listener");
     const handleGravityAction = (e: Event) => {
       const { type, data, componentId } = (e as CustomEvent).detail || {};
-      console.log("[GravityClient] Received gravity:action", { type, componentId, data });
       if (type) {
         zustandEmitAction(type, data, componentId);
         onAction?.(type, data);
@@ -172,22 +193,29 @@ export function GravityClient({
   }, [zustandEmitAction, onAction]);
 
   // Helper to send a message (adds to history + triggers workflow)
-  // Uses currentTargetTriggerNode which updates when loadTemplate is called
+  // FOCUS MODE: When focusState is set, routes to focused component's trigger with same chatId
+  // This is universal - all templates get focus routing automatically
   const sendMessage = useCallback(
-    (message: string, options?: { targetTriggerNode?: string }) => {
-      const effectiveTargetTriggerNode = options?.targetTriggerNode || currentTargetTriggerNode;
+    (message: string, options?: { targetTriggerNode?: string; chatId?: string }) => {
+      // Focus Mode routing - if focused, use focusState values
+      const effectiveTargetTriggerNode =
+        options?.targetTriggerNode || focusState?.targetTriggerNode || currentTargetTriggerNode;
+      const effectiveChatId = options?.chatId || focusState?.chatId;
+
       const userEntry = historyManager.addUserMessage(message, {
         workflowId: session.workflowId,
         targetTriggerNode: effectiveTargetTriggerNode,
+        chatId: effectiveChatId, // Use focus chatId if available
       });
+
       sendUserAction("send_message", {
         message,
-        chatId: userEntry.chatId,
+        chatId: effectiveChatId || userEntry.chatId, // Prefer focus chatId
         workflowId: session.workflowId,
         targetTriggerNode: effectiveTargetTriggerNode,
       });
     },
-    [historyManager, sendUserAction, session.workflowId, currentTargetTriggerNode]
+    [historyManager, sendUserAction, session.workflowId, currentTargetTriggerNode, focusState]
   );
 
   // Helper to emit action (for cross-boundary communication from templates)
@@ -207,7 +235,6 @@ export function GravityClient({
   // Also resets streaming state to prevent "Thinking..." from showing on the new template
   const loadTemplate = useCallback(
     (targetTriggerNode: string, options?: { chatId?: string }) => {
-      console.log("[GravityClient] loadTemplate called, updating targetTriggerNode:", targetTriggerNode);
       setCurrentTargetTriggerNode(targetTriggerNode);
       // Reset streaming state when switching templates to prevent stale "Thinking..." state
       setStreamingState("idle");
@@ -257,6 +284,10 @@ export function GravityClient({
         targetTriggerNode: currentTargetTriggerNode,
       },
       suggestions,
+      // Focus Mode - universal for all templates
+      focusState,
+      openFocus,
+      closeFocus,
     }),
     [
       historyManager,
@@ -268,6 +299,9 @@ export function GravityClient({
       session,
       currentTargetTriggerNode,
       suggestions,
+      focusState,
+      openFocus,
+      closeFocus,
     ]
   );
 
