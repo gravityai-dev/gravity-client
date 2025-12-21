@@ -28,6 +28,8 @@ export interface FocusState {
   targetTriggerNode: string | null;
   /** Chat ID to use when focused (same chatId = update existing component) */
   chatId: string | null;
+  /** Display name for the focused agent (from node label) */
+  agentName: string | null;
 }
 
 /**
@@ -94,7 +96,12 @@ interface AIContextState {
   clearSuggestions: () => void;
   clearContext: () => void;
   /** Open focus mode for a component */
-  openFocus: (componentId: string, targetTriggerNode: string | null, chatId: string | null) => void;
+  openFocus: (
+    componentId: string,
+    targetTriggerNode: string | null,
+    chatId: string | null,
+    agentName?: string | null
+  ) => void;
   /** Close focus mode */
   closeFocus: () => void;
 
@@ -125,7 +132,7 @@ export const useAIContext = create<AIContextState>((set) => ({
   apiBaseUrl: "",
   suggestions: { faqs: [], actions: [], recommendations: [] },
   lastAction: null,
-  focusState: { focusedComponentId: null, targetTriggerNode: null, chatId: null },
+  focusState: { focusedComponentId: null, targetTriggerNode: null, chatId: null, agentName: null },
   componentData: {},
 
   // Actions
@@ -241,16 +248,17 @@ export const useAIContext = create<AIContextState>((set) => ({
       isUserSpeaking: false,
       suggestions: { faqs: [], actions: [], recommendations: [] },
       lastAction: null,
-      focusState: { focusedComponentId: null, targetTriggerNode: null, chatId: null },
+      focusState: { focusedComponentId: null, targetTriggerNode: null, chatId: null, agentName: null },
     });
   },
 
-  openFocus: (componentId, targetTriggerNode, chatId) => {
+  openFocus: (componentId, targetTriggerNode, chatId, agentName = null) => {
     set({
       focusState: {
         focusedComponentId: componentId,
         targetTriggerNode,
         chatId,
+        agentName,
       },
     });
   },
@@ -261,6 +269,7 @@ export const useAIContext = create<AIContextState>((set) => ({
         focusedComponentId: null,
         targetTriggerNode: null,
         chatId: null,
+        agentName: null,
       },
     });
   },

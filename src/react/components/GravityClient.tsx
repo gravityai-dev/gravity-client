@@ -192,15 +192,24 @@ export function GravityClient({
     return () => window.removeEventListener("gravity:action", handleGravityAction);
   }, [zustandEmitAction, onAction]);
 
+  // Use ref for focusState in sendMessage to avoid recreating the callback
+  // when focusState changes (sendMessage reads current value at call time)
+  const focusStateRef = React.useRef(focusState);
+  focusStateRef.current = focusState;
+
   // Helper to send a message (adds to history + triggers workflow)
   // FOCUS MODE: When focusState is set, routes to focused component's trigger with same chatId
   // This is universal - all templates get focus routing automatically
+  // Uses ref for focusState to keep callback stable
   const sendMessage = useCallback(
     (message: string, options?: { targetTriggerNode?: string; chatId?: string }) => {
+      // Read current focusState from ref (not stale closure)
+      const currentFocusState = focusStateRef.current;
+
       // Focus Mode routing - if focused, use focusState values
       const effectiveTargetTriggerNode =
-        options?.targetTriggerNode || focusState?.targetTriggerNode || currentTargetTriggerNode;
-      const effectiveChatId = options?.chatId || focusState?.chatId;
+        options?.targetTriggerNode || currentFocusState?.targetTriggerNode || currentTargetTriggerNode;
+      const effectiveChatId = options?.chatId || currentFocusState?.chatId;
 
       const userEntry = historyManager.addUserMessage(message, {
         workflowId: session.workflowId,
@@ -215,7 +224,7 @@ export function GravityClient({
         targetTriggerNode: effectiveTargetTriggerNode,
       });
     },
-    [historyManager, sendUserAction, session.workflowId, currentTargetTriggerNode, focusState]
+    [historyManager, sendUserAction, session.workflowId, currentTargetTriggerNode]
   );
 
   // Helper to emit action (for cross-boundary communication from templates)
@@ -267,42 +276,58 @@ export function GravityClient({
     }
   }, [isReady, sendMessage, loadTemplate]);
 
-  // Build client context
-  const clientContext: ClientContext = useMemo(
+  // ============================================
+  // STABLE SUB-OBJECTS
+  // Each sub-object is memoized independently so changes to one
+  // don't cause re-renders in components that depend on another
+  // ============================================
+
+  // History context - ONLY changes when history array changes
+  const historyContext = useMemo(
+    () => ({
+      entries: historyManager.history,
+      getResponses: historyManager.getResponses,
+    }),
+    [historyManager.history, historyManager.getResponses]
+  );
+
+  // Session context - ONLY changes when session params change
+  const sessionContext = useMemo(
+    () => ({
+      ...session,
+      targetTriggerNode: currentTargetTriggerNode,
+    }),
+    [session, currentTargetTriggerNode]
+  );
+
+  // Actions context - stable functions for sending messages
+  const actionsContext = useMemo(
     () => ({
       sendMessage,
       loadTemplate,
       sendAgentMessage,
       sendVoiceCallMessage: wsSendVoiceCallMessage,
       emitAction,
-      history: {
-        entries: historyManager.history,
-        getResponses: historyManager.getResponses,
-      },
-      session: {
-        ...session,
-        targetTriggerNode: currentTargetTriggerNode,
-      },
+    }),
+    [sendMessage, loadTemplate, sendAgentMessage, wsSendVoiceCallMessage, emitAction]
+  );
+
+  // Build client context using stable sub-objects
+  // Now the context only recreates when the sub-objects themselves change
+  const clientContext: ClientContext = useMemo(
+    () => ({
+      // Spread actions for backward compatibility
+      ...actionsContext,
+      // Stable sub-objects
+      history: historyContext,
+      session: sessionContext,
       suggestions,
-      // Focus Mode - universal for all templates
+      // Focus Mode - these are from Zustand, stable references
       focusState,
       openFocus,
       closeFocus,
     }),
-    [
-      historyManager,
-      sendMessage,
-      loadTemplate,
-      sendAgentMessage,
-      wsSendVoiceCallMessage,
-      emitAction,
-      session,
-      currentTargetTriggerNode,
-      suggestions,
-      focusState,
-      openFocus,
-      closeFocus,
-    ]
+    [actionsContext, historyContext, sessionContext, suggestions, focusState, openFocus, closeFocus]
   );
 
   // If children render prop provided, use it
